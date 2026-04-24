@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+
+@font-face {
+  font-family: 'Ruslan Display';
+  src: url('/fonts/ruslan-display.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-display: 'Ruslan Display', serif;
+  --font-body: 'Literata', Georgia, serif;
+
+  --color-accent: #8B6F47;
+  --color-accent-dark: #6B5437;
+  --color-accent-light: #C4A876;
+  --color-deep: #2B3A55;
+  --color-cream: #FAF7F2;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-cream);
+}
