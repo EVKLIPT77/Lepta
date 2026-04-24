@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/azbyka.ts": {
+      "maxDuration": 10
+    }
+  },
+  "regions": ["fra1"]
+}
