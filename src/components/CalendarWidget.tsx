@@ -26,7 +26,7 @@ function CalendarWidget() {
   useEffect(() => {
     async function loadCalendar() {
       try {
-        const response = await fetch('/api/azbyka')
+        const response = await fetch('https://azbyka.ru/days/widgets/presentations.json')
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
         const data = await response.json()
 
