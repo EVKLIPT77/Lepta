@@ -5,10 +5,10 @@ function CalendarPage() {
   return (
     <Layout>
       <section className="bg-white border-b border-stone-200">
-        <div className="max-w-3xl mx-auto px-6 py-12 text-center">
-          <h1 className="font-display text-5xl tracking-wide mb-3" style={{ color: 'var(--color-deep)' }}>
-  Православный календарь
-</h1>
+        <div className="max-w-3xl mx-auto px-6 py-8 md:py-12 text-center">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl tracking-wide mb-3 leading-tight" style={{ color: 'var(--color-deep)' }}>
+            Православный календарь
+          </h1>
           <p className="text-stone-600 max-w-xl mx-auto">
             Праздники и память святых на сегодня
           </p>

@@ -9,7 +9,7 @@ export default defineConfig({
       '/api/azbyka': {
         target: 'https://azbyka.ru',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/azbyka/, '')
+        rewrite: () => '/days/widgets/presentations.json'
       }
     }
   }
