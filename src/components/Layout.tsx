@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { type ReactNode } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 
 interface LayoutProps {
   children: ReactNode
@@ -7,6 +8,7 @@ interface LayoutProps {
 
 function Layout({ children }: LayoutProps) {
   const location = useLocation()
+  const { user, profile, loading } = useAuth()
 
   const navItems = [
     { to: '/', label: 'Лента' },
@@ -21,7 +23,6 @@ function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-cream)' }}>
-      {/* Навигация */}
       <header
         className="border-b sticky top-0 z-10 backdrop-blur-sm"
         style={{
@@ -37,7 +38,7 @@ function Layout({ children }: LayoutProps) {
           >
             Лѣпта
           </Link>
-          <nav className="flex gap-6">
+          <nav className="flex gap-5 items-center">
             {navItems.map(item => (
               <Link
                 key={item.to}
@@ -53,14 +54,37 @@ function Layout({ children }: LayoutProps) {
                 {item.label}
               </Link>
             ))}
+
+            {!loading && (
+              user ? (
+                <Link
+                  to="/profile"
+                  className="text-sm transition-colors ml-2"
+                  style={{
+                    color: isActive('/profile') ? 'var(--color-accent-dark)' : '#78716c',
+                    fontWeight: isActive('/profile') ? 500 : 400,
+                    borderBottom: isActive('/profile') ? '2px solid var(--color-accent)' : '2px solid transparent',
+                    paddingBottom: '2px'
+                  }}
+                >
+                  {profile?.username ?? 'ЛК'}
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-sm px-3 py-1.5 rounded-lg transition-opacity hover:opacity-90 ml-2"
+                  style={{ backgroundColor: 'var(--color-deep)', color: 'white' }}
+                >
+                  Войти
+                </Link>
+              )
+            )}
           </nav>
         </div>
       </header>
 
-      {/* Контент */}
       <main className="flex-1">{children}</main>
 
-      {/* Футер */}
       <footer
         className="border-t mt-16"
         style={{
