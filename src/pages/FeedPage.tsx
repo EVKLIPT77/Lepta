@@ -79,11 +79,14 @@ function FeedPage() {
       <section className="bg-white border-b border-stone-200">
         <div className="max-w-3xl mx-auto px-6 py-10 md:py-16 text-center">
           <h1 className="font-display text-4xl sm:text-5xl md:text-7xl tracking-wide mb-4 leading-tight" style={{ color: 'var(--color-deep)' }}>
-            Православная лента
-          </h1>
-          <p className="text-stone-600 max-w-xl mx-auto">
-            Материалы от пастырей и авторов о вере, церкви и современной жизни
-          </p>
+  Эммаусъ
+</h1>
+<p className="text-lg text-stone-700 max-w-xl mx-auto mb-2 italic">
+  «Не горело ли в нас сердце наше, когда Он говорил нам на пути?»
+</p>
+<p className="text-sm text-stone-500 max-w-xl mx-auto">
+  Лк 24:32
+</p>
         </div>
       </section>
 

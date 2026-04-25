@@ -36,7 +36,7 @@ function Layout({ children }: LayoutProps) {
             className="font-display text-3xl tracking-wide transition-colors"
             style={{ color: 'var(--color-deep)' }}
           >
-            Лѣпта
+            Эммаусъ
           </Link>
           <nav className="flex gap-5 items-center">
             {navItems.map(item => (
@@ -95,10 +95,10 @@ function Layout({ children }: LayoutProps) {
         <div className="max-w-3xl mx-auto px-6 py-8 text-sm text-stone-500">
           <div className="flex justify-between items-center flex-wrap gap-3">
             <div>
-              <span className="font-display text-lg" style={{ color: 'var(--color-deep)' }}>Лѣпта</span>
-              <span className="mx-2">·</span>
-              <span>православная лента</span>
-            </div>
+  <span className="font-display text-lg" style={{ color: 'var(--color-deep)' }}>Эммаусъ</span>
+  <span className="mx-2">·</span>
+  <span>беседа на пути</span>
+</div>
             <div className="text-xs">
               © {new Date().getFullYear()}
             </div>
