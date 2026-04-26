@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
 interface LayoutProps {
@@ -9,6 +9,7 @@ interface LayoutProps {
 function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const { user, profile, loading } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const navItems = [
     { to: '/', label: 'Лента' },
@@ -21,24 +22,31 @@ function Layout({ children }: LayoutProps) {
     return location.pathname.startsWith(path)
   }
 
+  function closeMenu() {
+    setMenuOpen(false)
+  }
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-cream)' }}>
       <header
         className="border-b sticky top-0 z-10 backdrop-blur-sm"
         style={{
-          backgroundColor: 'rgba(250, 247, 242, 0.85)',
+          backgroundColor: 'rgba(250, 247, 242, 0.95)',
           borderColor: 'rgba(139, 111, 71, 0.2)'
         }}
       >
-        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <Link
             to="/"
-            className="font-display text-3xl tracking-wide transition-colors"
+            onClick={closeMenu}
+            className="font-display text-2xl sm:text-3xl tracking-wide transition-colors"
             style={{ color: 'var(--color-deep)' }}
           >
             Эммаусъ
           </Link>
-          <nav className="flex gap-5 items-center">
+
+          {/* Десктопная навигация */}
+          <nav className="hidden md:flex gap-5 items-center">
             {navItems.map(item => (
               <Link
                 key={item.to}
@@ -96,7 +104,100 @@ function Layout({ children }: LayoutProps) {
               )
             )}
           </nav>
+
+          {/* Мобильная кнопка-гамбургер */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden p-2 -mr-2 rounded-lg hover:bg-stone-100 transition-colors"
+            aria-label="Меню"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-deep)' }}>
+              {menuOpen ? (
+                <>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </>
+              ) : (
+                <>
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </>
+              )}
+            </svg>
+          </button>
         </div>
+
+        {/* Мобильное выпадающее меню */}
+        {menuOpen && (
+          <nav
+            className="md:hidden border-t flex flex-col"
+            style={{
+              borderColor: 'rgba(139, 111, 71, 0.2)',
+              backgroundColor: 'rgba(250, 247, 242, 0.98)'
+            }}
+          >
+            {navItems.map(item => (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={closeMenu}
+                className="px-6 py-3 border-b text-base transition-colors"
+                style={{
+                  color: isActive(item.to) ? 'var(--color-accent-dark)' : 'var(--color-deep)',
+                  fontWeight: isActive(item.to) ? 600 : 400,
+                  borderColor: 'rgba(139, 111, 71, 0.15)',
+                  backgroundColor: isActive(item.to) ? 'rgba(139, 111, 71, 0.08)' : 'transparent'
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
+
+            {!loading && user && (profile?.role === 'editor' || profile?.role === 'admin') && (
+              <Link
+                to="/admin/applications"
+                onClick={closeMenu}
+                className="px-6 py-3 border-b text-base transition-colors"
+                style={{
+                  color: isActive('/admin') ? 'var(--color-accent-dark)' : 'var(--color-deep)',
+                  fontWeight: isActive('/admin') ? 600 : 400,
+                  borderColor: 'rgba(139, 111, 71, 0.15)',
+                  backgroundColor: isActive('/admin') ? 'rgba(139, 111, 71, 0.08)' : 'transparent'
+                }}
+              >
+                Заявки
+              </Link>
+            )}
+
+            {!loading && (
+              user ? (
+                <Link
+                  to="/profile"
+                  onClick={closeMenu}
+                  className="px-6 py-3 text-base transition-colors flex items-center justify-between"
+                  style={{
+                    color: isActive('/profile') ? 'var(--color-accent-dark)' : 'var(--color-deep)',
+                    fontWeight: isActive('/profile') ? 600 : 400,
+                    backgroundColor: isActive('/profile') ? 'rgba(139, 111, 71, 0.08)' : 'transparent'
+                  }}
+                >
+                  <span>{profile?.display_name || profile?.username}</span>
+                  <span className="text-xs text-stone-500">@{profile?.username}</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={closeMenu}
+                  className="px-6 py-3 text-base font-medium text-center transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: 'var(--color-deep)', color: 'white' }}
+                >
+                  Войти
+                </Link>
+              )
+            )}
+          </nav>
+        )}
       </header>
 
       <main className="flex-1">{children}</main>
