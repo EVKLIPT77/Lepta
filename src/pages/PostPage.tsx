@@ -38,6 +38,7 @@ function PostPage() {
         .from('posts')
         .select('*, categories(*), authors(*)')
         .eq('id', id)
+        .eq('status', 'published')
         .single()
 
       if (error) setError(error.message)
@@ -86,12 +87,13 @@ function PostPage() {
         </div>
 
         <h1 className="font-display text-4xl md:text-5xl mb-8 leading-tight" style={{ color: 'var(--color-deep)' }}>
-  {post.title}
-</h1>
+          {post.title}
+        </h1>
 
-        <div className="text-stone-800 text-lg leading-relaxed whitespace-pre-wrap mb-12">
-          {post.body}
-        </div>
+       <div
+          className="prose prose-stone prose-lg max-w-none mb-12"
+          dangerouslySetInnerHTML={{ __html: post.body }}
+        />
 
         {post.authors && (
           <Link

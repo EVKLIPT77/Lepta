@@ -50,6 +50,7 @@ function FeedPage() {
       const { data: postsData, error: postsErr } = await supabase
         .from('posts')
         .select('*, categories(*), authors(*)')
+        .eq('status', 'published')
         .order('published_at', { ascending: false })
 
       if (postsErr) {

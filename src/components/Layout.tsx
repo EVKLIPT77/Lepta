@@ -57,18 +57,34 @@ function Layout({ children }: LayoutProps) {
 
             {!loading && (
               user ? (
-                <Link
-                  to="/profile"
-                  className="text-sm transition-colors ml-2"
-                  style={{
-                    color: isActive('/profile') ? 'var(--color-accent-dark)' : '#78716c',
-                    fontWeight: isActive('/profile') ? 500 : 400,
-                    borderBottom: isActive('/profile') ? '2px solid var(--color-accent)' : '2px solid transparent',
-                    paddingBottom: '2px'
-                  }}
-                >
-                  {profile?.username ?? 'ЛК'}
-                </Link>
+                <>
+                  {(profile?.role === 'editor' || profile?.role === 'admin') && (
+                    <Link
+                      to="/admin/applications"
+                      className="text-sm transition-colors"
+                      style={{
+                        color: isActive('/admin') ? 'var(--color-accent-dark)' : '#78716c',
+                        fontWeight: isActive('/admin') ? 500 : 400,
+                        borderBottom: isActive('/admin') ? '2px solid var(--color-accent)' : '2px solid transparent',
+                        paddingBottom: '2px'
+                      }}
+                    >
+                      Заявки
+                    </Link>
+                  )}
+                  <Link
+                    to="/profile"
+                    className="text-sm transition-colors ml-2"
+                    style={{
+                      color: isActive('/profile') ? 'var(--color-accent-dark)' : '#78716c',
+                      fontWeight: isActive('/profile') ? 500 : 400,
+                      borderBottom: isActive('/profile') ? '2px solid var(--color-accent)' : '2px solid transparent',
+                      paddingBottom: '2px'
+                    }}
+                  >
+                    {profile?.username ?? 'ЛК'}
+                  </Link>
+                </>
               ) : (
                 <Link
                   to="/login"
@@ -95,10 +111,10 @@ function Layout({ children }: LayoutProps) {
         <div className="max-w-3xl mx-auto px-6 py-8 text-sm text-stone-500">
           <div className="flex justify-between items-center flex-wrap gap-3">
             <div>
-  <span className="font-display text-lg" style={{ color: 'var(--color-deep)' }}>Эммаусъ</span>
-  <span className="mx-2">·</span>
-  <span>беседа на пути</span>
-</div>
+              <span className="font-display text-lg" style={{ color: 'var(--color-deep)' }}>Эммаусъ</span>
+              <span className="mx-2">·</span>
+              <span>беседа на пути</span>
+            </div>
             <div className="text-xs">
               © {new Date().getFullYear()}
             </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Layout from '../components/Layout'
+import SubscribeButton from '../components/SubscribeButton'
 
 interface Author {
   id: number
@@ -54,6 +55,7 @@ function AuthorPage() {
         .from('posts')
         .select('*, categories(*)')
         .eq('author_id', authorData.id)
+        .eq('status', 'published')
         .order('published_at', { ascending: false })
 
       if (postsErr) {
@@ -103,13 +105,14 @@ function AuthorPage() {
                 {author.name[0]}
               </div>
             )}
-            <div>
+            <div className="flex-1">
               <h1 className="font-display text-3xl mb-2" style={{ color: 'var(--color-deep)' }}>{author.name}</h1>
-              {author.bio && <p className="text-stone-700 mb-2">{author.bio}</p>}
+              {author.bio && <p className="text-stone-700 mb-3">{author.bio}</p>}
+              <SubscribeButton authorId={author.id} />
               {author.blessing_info && (
-                <p className="text-xs text-stone-500 italic">{author.blessing_info}</p>
+                <p className="text-xs text-stone-500 italic mt-3">{author.blessing_info}</p>
               )}
-            </div>
+              </div>
           </div>
         </div>
 

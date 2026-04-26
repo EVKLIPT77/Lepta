@@ -90,6 +90,15 @@ function ProfilePage() {
             >
               Редактировать профиль
             </Link>
+            {isAuthor && (
+              <Link
+                to="/profile/posts"
+                className="px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                style={{ backgroundColor: 'rgba(139, 111, 71, 0.15)', color: 'var(--color-accent-dark)' }}
+              >
+                Мои публикации
+              </Link>
+            )}
             <button
               onClick={signOut}
               className="px-5 py-2.5 rounded-lg text-sm border border-stone-300 hover:bg-stone-100 transition-colors"

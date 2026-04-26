@@ -11,51 +11,138 @@ interface Author {
   photo_url: string | null
 }
 
-interface AuthorWithCount extends Author {
+interface AuthorWithStats extends Author {
   postCount: number
+  subscriberCount: number
 }
 
+const TOP_LIMIT = 20
+
 function AuthorsPage() {
-  const [authors, setAuthors] = useState<AuthorWithCount[]>([])
+  const [allAuthors, setAllAuthors] = useState<AuthorWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     async function loadAuthors() {
-      // Загружаем авторов с количеством их постов
+      // Загружаем авторов + посты + подписчики одним запросом
       const { data, error } = await supabase
         .from('authors')
-        .select('*, posts(count)')
-        .order('name', { ascending: true })
+        .select('*, posts(count), subscriptions(count)')
 
       if (error) {
         setError(error.message)
-      } else {
-        // Преобразуем вложенный count в число
-        const withCounts = (data || []).map((a: any) => ({
-          ...a,
-          postCount: a.posts?.[0]?.count ?? 0
-        }))
-        setAuthors(withCounts)
+        setLoading(false)
+        return
       }
+
+      const enriched = (data || []).map((a: any) => ({
+        ...a,
+        postCount: a.posts?.[0]?.count ?? 0,
+        subscriberCount: a.subscriptions?.[0]?.count ?? 0
+      }))
+
+      // Сортируем по убыванию числа подписчиков, потом по алфавиту
+      enriched.sort((a, b) => {
+        if (b.subscriberCount !== a.subscriberCount) {
+          return b.subscriberCount - a.subscriberCount
+        }
+        return a.name.localeCompare(b.name, 'ru')
+      })
+
+      setAllAuthors(enriched)
       setLoading(false)
     }
     loadAuthors()
   }, [])
 
+  // Фильтрация поиском
+  const query = searchQuery.trim().toLowerCase()
+  const filtered = query
+    ? allAuthors.filter(a =>
+        a.name.toLowerCase().includes(query) ||
+        a.slug.toLowerCase().includes(query) ||
+        (a.bio?.toLowerCase().includes(query) ?? false)
+      )
+    : allAuthors
+
+  // Если идёт поиск — показываем все совпадения
+  // Если поиска нет — показываем топ-20 либо всех
+  const visible = query
+    ? filtered
+    : showAll
+      ? filtered
+      : filtered.slice(0, TOP_LIMIT)
+
+  const hasMore = !query && !showAll && allAuthors.length > TOP_LIMIT
+
   return (
     <Layout>
-      <main className="max-w-3xl mx-auto px-6 py-10">
-        <h1 className="font-display text-4xl mb-2" style={{ color: 'var(--color-deep)' }}>Авторы</h1>
-        <p className="text-stone-600 mb-8">
-          Православные пастыри, богословы и публицисты
-        </p>
+      <section className="bg-white border-b border-stone-200">
+        <div className="max-w-3xl mx-auto px-6 py-10 md:py-14 text-center">
+          <h1 className="font-display text-4xl sm:text-5xl mb-3 leading-tight" style={{ color: 'var(--color-deep)' }}>
+            Авторы
+          </h1>
+          <p className="text-stone-600">
+            Православные пастыри, богословы и публицисты
+          </p>
+        </div>
+      </section>
 
-        {loading && <p className="text-stone-500">Загрузка...</p>}
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        {/* Поиск */}
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Поиск по имени или описанию"
+              className="w-full px-4 py-3 pl-11 border border-stone-300 rounded-lg focus:outline-none focus:border-stone-500 bg-white"
+            />
+            <svg
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+              width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 text-xl leading-none"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {query && (
+            <p className="text-sm text-stone-500 mt-2">
+              Найдено: {filtered.length}
+            </p>
+          )}
+        </div>
+
+        {loading && <p className="text-stone-500">Загрузка…</p>}
         {error && <p className="text-red-600">Ошибка: {error}</p>}
 
+        {!loading && !query && allAuthors.length > TOP_LIMIT && !showAll && (
+          <p className="text-xs text-stone-500 uppercase tracking-wider mb-4">
+            Самые популярные
+          </p>
+        )}
+
+        {!loading && filtered.length === 0 && query && (
+          <p className="text-stone-500 text-center py-12">
+            По запросу «{searchQuery}» никого не найдено
+          </p>
+        )}
+
         <div className="grid sm:grid-cols-2 gap-4">
-          {authors.map(author => (
+          {visible.map(author => (
             <Link
               key={author.id}
               to={`/author/${author.slug}`}
@@ -74,30 +161,43 @@ function AuthorsPage() {
               )}
               <div className="flex-1 min-w-0">
                 <div className="font-display text-lg mb-1" style={{ color: 'var(--color-deep)' }}>
-  {author.name}
-</div>
+                  {author.name}
+                </div>
                 {author.bio && (
                   <div className="text-sm text-stone-600 line-clamp-2 mb-2">
                     {author.bio}
                   </div>
                 )}
-                <div className="text-xs text-stone-500">
-                  {author.postCount} {pluralize(author.postCount, ['публикация', 'публикации', 'публикаций'])}
+                <div className="text-xs text-stone-500 flex gap-3">
+                  <span>
+                    {author.postCount} {pluralize(author.postCount, ['публикация', 'публикации', 'публикаций'])}
+                  </span>
+                  {author.subscriberCount > 0 && (
+                    <span>
+                      {author.subscriberCount} {pluralize(author.subscriberCount, ['подписчик', 'подписчика', 'подписчиков'])}
+                    </span>
+                  )}
                 </div>
               </div>
             </Link>
           ))}
         </div>
 
-        {!loading && authors.length === 0 && (
-          <p className="text-stone-500 text-center py-10">Пока нет авторов</p>
+        {hasMore && (
+          <div className="text-center mt-6">
+            <button
+              onClick={() => setShowAll(true)}
+              className="px-6 py-2.5 rounded-lg text-sm border border-stone-300 hover:bg-stone-100 transition-colors"
+            >
+              Показать всех ({allAuthors.length})
+            </button>
+          </div>
         )}
-      </main>
+      </div>
     </Layout>
   )
 }
 
-// Правильное склонение для русского: 1 публикация, 2 публикации, 5 публикаций
 function pluralize(n: number, forms: [string, string, string]): string {
   const mod10 = n % 10
   const mod100 = n % 100
