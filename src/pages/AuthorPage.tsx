@@ -83,7 +83,7 @@ function AuthorPage() {
     return (
       <div className="min-h-screen bg-stone-50 p-10">
         <p className="text-red-600 mb-4">Ошибка: {error}</p>
-        <Link to="/" className="text-stone-700 underline">К ленте</Link>
+        <Link to="/feed" className="text-stone-700 underline">К ленте</Link>
       </div>
     )
   }

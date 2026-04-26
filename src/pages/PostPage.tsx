@@ -69,7 +69,7 @@ function PostPage() {
     <Layout>
       <div className="bg-white border-b border-stone-200">
         <div className="max-w-3xl mx-auto px-6 py-3">
-          <Link to="/" className="text-sm text-stone-600 hover:text-stone-900">
+          <Link to="/feed" className="text-sm text-stone-600 hover:text-stone-900">
             ← К ленте
           </Link>
         </div>

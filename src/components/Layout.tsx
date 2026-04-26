@@ -12,15 +12,15 @@ function Layout({ children }: LayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const navItems = [
-    { to: '/', label: 'Лента' },
-    { to: '/authors', label: 'Авторы' },
-    { to: '/calendar', label: 'Календарь' },
-  ]
+  { to: '/feed', label: 'Лента' },
+  { to: '/authors', label: 'Авторы' },
+  { to: '/calendar', label: 'Календарь' },
+]
 
   function isActive(path: string): boolean {
-    if (path === '/') return location.pathname === '/'
-    return location.pathname.startsWith(path)
-  }
+  if (path === '/feed') return location.pathname === '/feed' || location.pathname === '/'
+  return location.pathname.startsWith(path)
+}
 
   function closeMenu() {
     setMenuOpen(false)
