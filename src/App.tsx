@@ -14,6 +14,7 @@ import AdminApplicationsPage from './pages/AdminApplicationsPage'
 import AdminApplicationDetailPage from './pages/AdminApplicationDetailPage'
 import MyPostsPage from './pages/MyPostsPage'
 import PostEditPage from './pages/PostEditPage'
+import LeptaPage from './pages/LeptaPage'
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route path="/authors" element={<AuthorsPage />} />
         <Route path="/author/:slug" element={<AuthorPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/lepta" element={<LeptaPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/profile" element={<ProfilePage />} />

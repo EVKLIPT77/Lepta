@@ -15,6 +15,7 @@ function Layout({ children }: LayoutProps) {
   { to: '/feed', label: 'Лента' },
   { to: '/authors', label: 'Авторы' },
   { to: '/calendar', label: 'Календарь' },
+  { to: '/lepta', label: 'Лѣпта' },
 ]
 
   function isActive(path: string): boolean {
