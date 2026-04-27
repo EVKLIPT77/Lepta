@@ -4,6 +4,7 @@ import { useAuth, type SocialLinks, type PrivacySettings } from '../contexts/Aut
 import { supabase } from '../supabase'
 import Layout from '../components/Layout'
 import { getInterestIcon } from '../lib/interestIcons'
+import type { Json } from '../types/database'
 
 interface InterestTag {
   id: number
@@ -144,7 +145,7 @@ function ProfileEditPage() {
     setSaving(true)
 
     // Обновляем основной профиль
-    const { error: updateError } = await supabase
+   const { error: updateError } = await supabase
       .from('profiles')
       .update({
         display_name: displayName.trim() || null,
@@ -153,8 +154,8 @@ function ProfileEditPage() {
         christian_name: christianName.trim() || null,
         baptism_date: baptismDate || null,
         city: city.trim() || null,
-        social_links: socialLinks,
-        privacy_settings: privacy,
+        social_links: socialLinks as unknown as Json,
+        privacy_settings: privacy as unknown as Json,
       })
       .eq('id', user.id)
 
