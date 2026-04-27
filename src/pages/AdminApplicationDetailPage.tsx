@@ -43,7 +43,7 @@ function AdminApplicationDetailPage() {
       const { data, error } = await supabase
         .from('author_applications')
         .select('*, profiles(username, display_name, avatar_url, bio, role)')
-        .eq('id', id)
+        .eq('id', id!)
         .single()
 
       if (error || !data) {
@@ -52,7 +52,9 @@ function AdminApplicationDetailPage() {
         return
       }
 
-      setApplication(data)
+      const validStatuses = ['pending', 'approved', 'rejected'] as const
+      const status = (validStatuses as readonly string[]).includes(data.status) ? (data.status as ApplicationFull['status']) : 'pending'
+      setApplication({ ...data, status })
 
       // Получаем signed URL для документа
       if (data.blessing_doc_url) {

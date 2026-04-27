@@ -5,23 +5,23 @@ import Layout from '../components/Layout'
 
 interface Category {
   id: number
-  name: string
-  slug: string
+  name: string | null
+  slug: string | null
 }
 
 interface Author {
   id: number
-  name: string
-  slug: string
+  name: string | null
+  slug: string | null
   bio: string | null
   photo_url: string | null
 }
 
 interface Post {
   id: number
-  title: string
-  body: string
-  published_at: string
+  title: string | null
+  body: string | null
+  published_at: string | null
   categories: Category | null
   authors: Author | null
 }
@@ -34,10 +34,11 @@ function PostPage() {
 
   useEffect(() => {
     async function loadPost() {
+      if (!id) return
       const { data, error } = await supabase
         .from('posts')
         .select('*, categories(*), authors(*)')
-        .eq('id', id)
+        .eq('id', Number(id))
         .eq('status', 'published')
         .single()
 
@@ -61,9 +62,11 @@ function PostPage() {
     )
   }
 
-  const dateStr = new Date(post.published_at).toLocaleDateString('ru-RU', {
-    day: 'numeric', month: 'long', year: 'numeric'
-  })
+  const dateStr = post.published_at
+    ? new Date(post.published_at).toLocaleDateString('ru-RU', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      })
+    : ''
 
  return (
     <Layout>
@@ -87,12 +90,12 @@ function PostPage() {
         </div>
 
         <h1 className="font-display text-4xl md:text-5xl mb-8 leading-tight" style={{ color: 'var(--color-deep)' }}>
-          {post.title}
+          {post.title || 'Без названия'}
         </h1>
 
        <div
           className="prose prose-stone prose-lg max-w-none mb-12"
-          dangerouslySetInnerHTML={{ __html: post.body }}
+          dangerouslySetInnerHTML={{ __html: post.body || '' }}
         />
 
         {post.authors && (
@@ -104,12 +107,12 @@ function PostPage() {
               {post.authors.photo_url ? (
                 <img
                   src={post.authors.photo_url}
-                  alt={post.authors.name}
+                  alt={post.authors.name || ''}
                   className="w-14 h-14 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-14 h-14 rounded-full bg-stone-200 flex items-center justify-center text-stone-500 text-xl font-display">
-                  {post.authors.name[0]}
+                  {post.authors.name?.[0] || '?'}
                 </div>
               )}
               <div className="flex-1">

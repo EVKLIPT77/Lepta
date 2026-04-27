@@ -62,7 +62,7 @@ function MyPostsPage() {
       if (postsErr) {
         setError(postsErr.message)
       } else {
-        setPosts((postsData as any) || [])
+        setPosts((postsData as unknown as Post[]) || [])
       }
       setLoading(false)
     }

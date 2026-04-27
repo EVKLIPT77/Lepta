@@ -6,17 +6,17 @@ import Layout from '../components/Layout'
 
 interface PostPreview {
   id: number
-  title: string
+  title: string | null
   excerpt: string | null
   cover_image_url: string | null
-  authors: { name: string; slug: string } | null
-  categories: { name: string } | null
+  authors: { name: string | null; slug: string | null } | null
+  categories: { name: string | null } | null
 }
 
 interface AuthorPreview {
   id: number
-  name: string
-  slug: string
+  name: string | null
+  slug: string | null
   photo_url: string | null
   bio: string | null
 }
@@ -44,7 +44,7 @@ function HomePage() {
         .select('id, name, slug, photo_url, bio, subscriptions(count)')
 
       const topThree = (authors || [])
-        .map((a: any) => ({ ...a, subCount: a.subscriptions?.[0]?.count ?? 0 }))
+        .map(a => ({ ...a, subCount: (a.subscriptions as { count: number }[] | null)?.[0]?.count ?? 0 }))
         .sort((a, b) => b.subCount - a.subCount)
         .slice(0, 3)
 
@@ -58,7 +58,7 @@ function HomePage() {
         .from('authors')
         .select('*', { count: 'exact', head: true })
 
-      setRecentPosts((posts as any) || [])
+      setRecentPosts((posts as unknown as PostPreview[]) || [])
       setTopAuthors(topThree)
       setStats({ posts: postCount ?? 0, authors: authorCount ?? 0 })
       setLoading(false)
@@ -175,7 +175,7 @@ function HomePage() {
                     {post.authors && <span>{post.authors.name}</span>}
                   </div>
                   <h3 className="font-display text-xl mb-2" style={{ color: 'var(--color-deep)' }}>
-                    {post.title}
+                    {post.title || 'Без названия'}
                   </h3>
                   {post.excerpt && (
                     <p className="text-sm text-stone-700 line-clamp-2">{post.excerpt}</p>
@@ -210,12 +210,12 @@ function HomePage() {
                   {author.photo_url ? (
                     <img
                       src={author.photo_url}
-                      alt={author.name}
+                      alt={author.name || ''}
                       className="w-20 h-20 rounded-full object-cover mx-auto mb-3"
                     />
                   ) : (
                     <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center text-stone-500 text-2xl font-display mx-auto mb-3">
-                      {author.name[0]}
+                      {author.name?.[0] || '?'}
                     </div>
                   )}
                   <div className="font-display text-base mb-1" style={{ color: 'var(--color-deep)' }}>

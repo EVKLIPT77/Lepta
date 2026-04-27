@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // Сгенерированные файлы и сборка не линтим
+  globalIgnores(['dist', 'src/types/database.ts']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -17,6 +18,12 @@ export default defineConfig([
     ],
     languageOptions: {
       globals: globals.browser,
+    },
+    rules: {
+      // Правила React Compiler-эры из react-hooks v7. Слишком строгие для
+      // обычного React-кода без Compiler — отключаем, оставляем базовые.
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/immutability': 'off',
     },
   },
 ])

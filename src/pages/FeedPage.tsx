@@ -5,24 +5,24 @@ import Layout from '../components/Layout'
 
 interface Category {
   id: number
-  name: string
-  slug: string
-  sort_order: number
+  name: string | null
+  slug: string | null
+  sort_order: number | null
 }
 
 interface Author {
   id: number
-  name: string
-  slug: string
+  name: string | null
+  slug: string | null
   photo_url: string | null
 }
 
 interface Post {
   id: number
-  title: string
-  body: string
+  title: string | null
+  body: string | null
   excerpt: string | null
-  published_at: string
+  published_at: string | null
   categories: Category | null
   authors: Author | null
 }
@@ -107,7 +107,7 @@ function FeedPage() {
           {categories.map(cat => (
             <button
   key={cat.id}
-  onClick={() => setSelectedSlug(cat.slug)}
+  onClick={() => cat.slug && setSelectedSlug(cat.slug)}
   className="px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors"
   style={{
     backgroundColor: selectedSlug === cat.slug ? 'var(--color-deep)' : 'rgba(139, 111, 71, 0.1)',
@@ -135,7 +135,7 @@ function FeedPage() {
                 {post.categories && (
                   <>
                     <button
-                      onClick={() => setSelectedSlug(post.categories!.slug)}
+                      onClick={() => post.categories?.slug && setSelectedSlug(post.categories.slug)}
                       className="uppercase tracking-wider hover:text-stone-900"
                     >
                       {post.categories.name}
@@ -154,7 +154,7 @@ function FeedPage() {
               </div>
               <Link to={`/post/${post.id}`} className="block">
                 <h2 className="font-display text-2xl mb-3 transition-colors" style={{ color: 'var(--color-deep)' }}>
-  {post.title}
+  {post.title || 'Без названия'}
 </h2>
                 <p className="text-stone-700 leading-relaxed">
                   {getPreview(post)}

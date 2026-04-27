@@ -42,7 +42,10 @@ function AdminApplicationsPage() {
       }
 
       const { data } = await query
-      setApplications(data || [])
+      setApplications((data || []).map(a => ({
+        ...a,
+        status: ((['pending','approved','rejected'] as const).includes(a.status as 'pending') ? a.status : 'pending') as 'pending' | 'approved' | 'rejected'
+      })))
       setLoading(false)
     }
     load()

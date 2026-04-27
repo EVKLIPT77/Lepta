@@ -6,8 +6,8 @@ import SubscribeButton from '../components/SubscribeButton'
 
 interface Author {
   id: number
-  name: string
-  slug: string
+  name: string | null
+  slug: string | null
   bio: string | null
   photo_url: string | null
   blessing_info: string | null
@@ -15,16 +15,16 @@ interface Author {
 
 interface Category {
   id: number
-  name: string
-  slug: string
+  name: string | null
+  slug: string | null
 }
 
 interface Post {
   id: number
-  title: string
+  title: string | null
   excerpt: string | null
-  body: string
-  published_at: string
+  body: string | null
+  published_at: string | null
   categories: Category | null
 }
 
@@ -37,6 +37,7 @@ function AuthorPage() {
 
   useEffect(() => {
     async function loadData() {
+      if (!slug) return
       // Сначала автор
       const { data: authorData, error: authorErr } = await supabase
         .from('authors')
@@ -97,12 +98,12 @@ function AuthorPage() {
             {author.photo_url ? (
               <img
                 src={author.photo_url}
-                alt={author.name}
+                alt={author.name || ''}
                 className="w-20 h-20 rounded-full object-cover flex-shrink-0"
               />
             ) : (
               <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center text-stone-500 text-3xl font-display flex-shrink-0">
-                {author.name[0]}
+                {author.name?.[0] || '?'}
               </div>
             )}
             <div className="flex-1">
@@ -134,7 +135,7 @@ function AuthorPage() {
                     {post.categories.name}
                   </div>
                 )}
-                <h3 className="font-display text-lg mb-2" style={{ color: 'var(--color-deep)' }}>{post.title}</h3>
+                <h3 className="font-display text-lg mb-2" style={{ color: 'var(--color-deep)' }}>{post.title || 'Без названия'}</h3>
                 <p className="text-stone-700 text-sm">{getPreview(post)}</p>
               </Link>
             ))}

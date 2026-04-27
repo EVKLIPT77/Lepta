@@ -37,8 +37,10 @@ function AuthorApplicationPage() {
         .select('*')
         .eq('profile_id', user!.id)
         .maybeSingle()
-      setExisting(data)
-      if (data) setMotivation(data.motivation)
+      if (data) {
+        setExisting(normalizeApplication(data))
+        setMotivation(data.motivation)
+      }
       setLoadingApp(false)
     }
     load()
@@ -298,3 +300,10 @@ function AuthorApplicationPage() {
 }
 
 export default AuthorApplicationPage
+
+// Сужаем status из string в union
+function normalizeApplication(data: { id: string; status: string; motivation: string; blessing_doc_url: string | null; reviewer_comment: string | null; created_at: string; reviewed_at: string | null }): Application {
+  const validStatuses = ['pending', 'approved', 'rejected'] as const
+  const status = (validStatuses as readonly string[]).includes(data.status) ? (data.status as Application['status']) : 'pending'
+  return { ...data, status }
+}

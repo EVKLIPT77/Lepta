@@ -22,7 +22,13 @@ function ProfilePage() {
         .select('id, status, created_at')
         .eq('profile_id', user!.id)
         .maybeSingle()
-      setApplication(data)
+      if (!data) {
+        setApplication(null)
+        return
+      }
+      const validStatuses = ['pending', 'approved', 'rejected'] as const
+      const status = (validStatuses as readonly string[]).includes(data.status) ? (data.status as Application['status']) : 'pending'
+      setApplication({ ...data, status })
     }
     loadApp()
   }, [user])

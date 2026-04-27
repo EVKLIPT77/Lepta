@@ -5,8 +5,8 @@ import Layout from '../components/Layout'
 
 interface Author {
   id: number
-  name: string
-  slug: string
+  name: string | null
+  slug: string | null
   bio: string | null
   photo_url: string | null
 }
@@ -38,18 +38,18 @@ function AuthorsPage() {
         return
       }
 
-      const enriched = (data || []).map((a: any) => ({
+      const enriched = (data || []).map(a => ({
         ...a,
-        postCount: a.posts?.[0]?.count ?? 0,
-        subscriberCount: a.subscriptions?.[0]?.count ?? 0
-      }))
+        postCount: (a.posts as { count: number }[] | null)?.[0]?.count ?? 0,
+        subscriberCount: (a.subscriptions as { count: number }[] | null)?.[0]?.count ?? 0
+      })) as AuthorWithStats[]
 
       // Сортируем по убыванию числа подписчиков, потом по алфавиту
       enriched.sort((a, b) => {
         if (b.subscriberCount !== a.subscriberCount) {
           return b.subscriberCount - a.subscriberCount
         }
-        return a.name.localeCompare(b.name, 'ru')
+        return (a.name || '').localeCompare(b.name || '', 'ru')
       })
 
       setAllAuthors(enriched)
@@ -62,8 +62,8 @@ function AuthorsPage() {
   const query = searchQuery.trim().toLowerCase()
   const filtered = query
     ? allAuthors.filter(a =>
-        a.name.toLowerCase().includes(query) ||
-        a.slug.toLowerCase().includes(query) ||
+        (a.name || '').toLowerCase().includes(query) ||
+        (a.slug || '').toLowerCase().includes(query) ||
         (a.bio?.toLowerCase().includes(query) ?? false)
       )
     : allAuthors
@@ -151,12 +151,12 @@ function AuthorsPage() {
               {author.photo_url ? (
                 <img
                   src={author.photo_url}
-                  alt={author.name}
+                  alt={author.name || ''}
                   className="w-16 h-16 rounded-full object-cover flex-shrink-0"
                 />
               ) : (
                 <div className="w-16 h-16 rounded-full bg-stone-200 flex items-center justify-center text-stone-500 text-2xl font-display flex-shrink-0">
-                  {author.name[0]}
+                  {author.name?.[0] || '?'}
                 </div>
               )}
               <div className="flex-1 min-w-0">

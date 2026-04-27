@@ -7,9 +7,9 @@ import PostEditor from '../components/PostEditor'
 
 interface Category {
   id: number
-  name: string
-  slug: string
-  sort_order: number
+  name: string | null
+  slug: string | null
+  sort_order: number | null
 }
 
 function PostEditPage() {
@@ -68,7 +68,7 @@ function PostEditPage() {
         const { data: postData, error: postErr } = await supabase
           .from('posts')
           .select('*')
-          .eq('id', id)
+          .eq('id', Number(id))
           .single()
 
         if (postErr || !postData) {
@@ -88,7 +88,7 @@ function PostEditPage() {
         setBody(postData.body || '')
         setCategoryId(postData.category_id)
         setCoverUrl(postData.cover_image_url)
-        setStatus(postData.status || 'draft')
+        setStatus((postData.status === 'published' || postData.status === 'draft') ? postData.status : 'draft')
       }
 
       setLoading(false)
@@ -147,7 +147,16 @@ function PostEditPage() {
 
     setSaving(true)
 
-    const payload: any = {
+    const payload: {
+      title: string
+      excerpt: string | null
+      body: string
+      category_id: number | null
+      cover_image_url: string | null
+      status: 'draft' | 'published'
+      author_id: number
+      published_at?: string
+    } = {
       title: title.trim(),
       excerpt: excerpt.trim() || null,
       body: body,
@@ -175,7 +184,7 @@ function PostEditPage() {
       const { error: updateError } = await supabase
         .from('posts')
         .update(payload)
-        .eq('id', id!)
+        .eq('id', Number(id!))
       if (updateError) {
         setError('Не удалось сохранить: ' + updateError.message)
         setSaving(false)
@@ -193,7 +202,7 @@ function PostEditPage() {
     const { error: delError } = await supabase
       .from('posts')
       .delete()
-      .eq('id', id)
+      .eq('id', Number(id))
 
     if (delError) {
       setError('Не удалось удалить: ' + delError.message)

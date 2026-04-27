@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../supabase'
@@ -34,7 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('id', userId)
       .single()
-    setProfile(data)
+    if (!data) {
+      setProfile(null)
+      return
+    }
+    // Сужаем role: в БД это text + check, но Supabase выдаёт строку
+    const validRoles = ['reader', 'author', 'editor', 'admin'] as const
+    const role = (validRoles as readonly string[]).includes(data.role) ? (data.role as Profile['role']) : 'reader'
+    setProfile({ ...data, role })
   }
 
   useEffect(() => {

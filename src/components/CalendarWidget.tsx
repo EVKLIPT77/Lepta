@@ -55,8 +55,9 @@ function CalendarWidget() {
         })
 
         setSaints(parsed)
-      } catch (err: any) {
-        setError(err.message || 'Не удалось загрузить календарь')
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Не удалось загрузить календарь'
+        setError(message)
       } finally {
         setLoading(false)
       }
