@@ -99,7 +99,7 @@ function AuthorsPage() {
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Поиск по имени или описанию"
+              placeholder="Поиск по имени, юзернейму или описанию"
               className="w-full px-4 py-3 pl-11 border border-stone-300 rounded-lg focus:outline-none focus:border-stone-500 bg-white"
             />
             <svg
@@ -160,9 +160,12 @@ function AuthorsPage() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="font-display text-lg mb-1" style={{ color: 'var(--color-deep)' }}>
+                <div className="font-display text-lg leading-tight" style={{ color: 'var(--color-deep)' }}>
                   {author.name}
                 </div>
+                {author.slug && (
+                  <div className="text-xs text-stone-500 mb-1.5">@{author.slug}</div>
+                )}
                 {author.bio && (
                   <div className="text-sm text-stone-600 line-clamp-2 mb-2">
                     {author.bio}

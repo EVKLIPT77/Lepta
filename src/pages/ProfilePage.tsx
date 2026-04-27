@@ -3,6 +3,7 @@ import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabase'
 import Layout from '../components/Layout'
+import ProfileCard, { type ProfileInterest } from '../components/ProfileCard'
 
 interface Application {
   id: string
@@ -13,35 +14,56 @@ interface Application {
 function ProfilePage() {
   const { user, profile, loading, signOut } = useAuth()
   const [application, setApplication] = useState<Application | null>(null)
+  const [interests, setInterests] = useState<ProfileInterest[]>([])
 
   useEffect(() => {
     if (!user) return
-    async function loadApp() {
-      const { data } = await supabase
-        .from('author_applications')
-        .select('id, status, created_at')
-        .eq('profile_id', user!.id)
-        .maybeSingle()
-      if (!data) {
+
+    async function load() {
+      const [{ data: appData }, { data: interestsData }] = await Promise.all([
+        supabase
+          .from('author_applications')
+          .select('id, status, created_at')
+          .eq('profile_id', user!.id)
+          .maybeSingle(),
+        supabase
+          .from('profile_interests')
+          .select('tag_id, interest_tags(id, name, icon, sort_order)')
+          .eq('profile_id', user!.id),
+      ])
+
+      // Заявка
+      if (appData) {
+        const validStatuses = ['pending', 'approved', 'rejected'] as const
+        const status = (validStatuses as readonly string[]).includes(appData.status)
+          ? (appData.status as Application['status'])
+          : 'pending'
+        setApplication({ ...appData, status })
+      } else {
         setApplication(null)
-        return
       }
-      const validStatuses = ['pending', 'approved', 'rejected'] as const
-      const status = (validStatuses as readonly string[]).includes(data.status) ? (data.status as Application['status']) : 'pending'
-      setApplication({ ...data, status })
+
+      // Интересы (через join)
+      const tags = (interestsData || [])
+        .map(row => row.interest_tags)
+        .filter((t): t is { id: number; name: string; icon: string | null; sort_order: number | null } => Boolean(t))
+        .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
+        .map(t => ({ id: t.id, name: t.name, icon: t.icon }))
+      setInterests(tags)
     }
-    loadApp()
+
+    load()
   }, [user])
 
   if (loading) {
     return <Layout><div className="p-10 text-stone-500">Загрузка…</div></Layout>
   }
 
-  if (!user) {
+  if (!user || !profile) {
     return <Navigate to="/login" replace />
   }
 
-  const isAuthor = profile?.role === 'author' || profile?.role === 'editor' || profile?.role === 'admin'
+  const isAuthor = profile.role === 'author' || profile.role === 'editor' || profile.role === 'admin'
 
   return (
     <Layout>
@@ -50,38 +72,18 @@ function ProfilePage() {
           Личный кабинет
         </h1>
 
-        <div className="bg-white border border-stone-200 rounded-lg p-6 mb-6">
-          <div className="flex items-start gap-5 mb-6">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.display_name ?? profile.username}
-                className="w-20 h-20 rounded-full object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center text-stone-500 text-2xl font-display flex-shrink-0">
-                {profile?.username?.[0]?.toUpperCase() ?? '?'}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-display text-2xl" style={{ color: 'var(--color-deep)' }}>
-                  {profile?.display_name || profile?.username || '—'}
-                </span>
-                {isAuthor && (
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(139, 111, 71, 0.15)', color: 'var(--color-accent-dark)' }}>
-                    {profile?.role === 'author' ? 'Автор' : profile?.role === 'editor' ? 'Редактор' : 'Администратор'}
-                  </span>
-                )}
-              </div>
-              <div className="text-sm text-stone-500 mb-2">@{profile?.username}</div>
-              {profile?.bio && (
-                <p className="text-sm text-stone-700">{profile.bio}</p>
-              )}
-            </div>
-          </div>
+        {/* Карточка профиля — режим владельца, видим всё */}
+        <div className="mb-6">
+          <ProfileCard
+            data={profile}
+            interests={interests}
+            viewMode="owner"
+          />
+        </div>
 
-          <dl className="space-y-3 text-sm border-t border-stone-100 pt-4">
+        {/* Кнопки и контакт-данные владельца */}
+        <div className="bg-white border border-stone-200 rounded-lg p-6 mb-6">
+          <dl className="space-y-3 text-sm">
             <div>
               <dt className="text-stone-500 text-xs uppercase tracking-wider">Email</dt>
               <dd className="text-stone-900 mt-0.5">{user.email}</dd>
@@ -105,6 +107,12 @@ function ProfilePage() {
                 Мои публикации
               </Link>
             )}
+            <Link
+              to={isAuthor ? `/author/${profile.username}` : `/u/${profile.username}`}
+              className="px-5 py-2.5 rounded-lg text-sm border border-stone-300 hover:bg-stone-100 transition-colors"
+            >
+              Открыть мою страницу
+            </Link>
             <button
               onClick={signOut}
               className="px-5 py-2.5 rounded-lg text-sm border border-stone-300 hover:bg-stone-100 transition-colors"
@@ -168,27 +176,6 @@ function ProfilePage() {
             )}
           </div>
         )}
-
-        {/* Заглушка для продавцов — будет видна по необходимости */}
-        {/*
-        {!isSeller && (
-          <div className="bg-white border border-stone-200 rounded-lg p-6">
-            <h2 className="font-display text-xl mb-3" style={{ color: 'var(--color-deep)' }}>
-              Стать продавцом
-            </h2>
-            <p className="text-sm text-stone-700 mb-4">
-              Если у вас есть православная мастерская, монастырское хозяйство или книжное издательство — продавайте товары через Лѣпту.
-            </p>
-            <Link
-              to="/profile/seller-application"
-              className="px-5 py-2.5 rounded-lg text-sm font-medium transition-colors inline-block"
-              style={{ backgroundColor: 'rgba(139, 111, 71, 0.15)', color: 'var(--color-accent-dark)' }}
-            >
-              Подать заявку
-            </Link>
-          </div>
-        )}
-        */}
       </div>
     </Layout>
   )

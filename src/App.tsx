@@ -15,6 +15,7 @@ import AdminApplicationDetailPage from './pages/AdminApplicationDetailPage'
 import MyPostsPage from './pages/MyPostsPage'
 import PostEditPage from './pages/PostEditPage'
 import LeptaPage from './pages/LeptaPage'
+import UserPage from './pages/UserPage'
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/author/:slug" element={<AuthorPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/lepta" element={<LeptaPage />} />
+        <Route path="/u/:username" element={<UserPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/profile" element={<ProfilePage />} />

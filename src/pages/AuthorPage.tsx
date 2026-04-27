@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Layout from '../components/Layout'
 import SubscribeButton from '../components/SubscribeButton'
+import { getInterestIcon } from '../lib/interestIcons'
+import type { PrivacySettings, SocialLinks } from '../contexts/AuthContext'
 
 interface Author {
   id: number
@@ -11,6 +13,21 @@ interface Author {
   bio: string | null
   photo_url: string | null
   blessing_info: string | null
+  profile_id: string | null
+}
+
+interface ProfileExtras {
+  christian_name: string | null
+  baptism_date: string | null
+  city: string | null
+  social_links: SocialLinks
+  privacy_settings: PrivacySettings
+}
+
+interface ProfileInterest {
+  id: number
+  name: string
+  icon: string | null
 }
 
 interface Category {
@@ -28,9 +45,46 @@ interface Post {
   categories: Category | null
 }
 
+const DEFAULT_PRIVACY: PrivacySettings = {
+  christian_name: true,
+  baptism_date: false,
+  city: false,
+  interests: true,
+  social_links: true,
+}
+
+function formatBaptismDate(iso: string | null): string | null {
+  if (!iso) return null
+  try {
+    return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+  } catch {
+    return null
+  }
+}
+
+function normalizeTelegram(value: string) {
+  const v = value.trim()
+  if (v.startsWith('http')) return { display: v, href: v }
+  const u = v.replace(/^@/, '').replace(/^t\.me\//i, '')
+  return { display: '@' + u, href: 'https://t.me/' + u }
+}
+function normalizeVk(value: string) {
+  const v = value.trim()
+  if (v.startsWith('http')) return { display: v, href: v }
+  const u = v.replace(/^vk\.com\//i, '')
+  return { display: u, href: 'https://vk.com/' + u }
+}
+function normalizeWebsite(value: string) {
+  const v = value.trim()
+  const href = v.startsWith('http') ? v : 'https://' + v
+  return { display: v.replace(/^https?:\/\//, ''), href }
+}
+
 function AuthorPage() {
   const { slug } = useParams<{ slug: string }>()
   const [author, setAuthor] = useState<Author | null>(null)
+  const [extras, setExtras] = useState<ProfileExtras | null>(null)
+  const [interests, setInterests] = useState<ProfileInterest[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -51,23 +105,61 @@ function AuthorPage() {
         return
       }
 
-      // Затем его посты
-      const { data: postsData, error: postsErr } = await supabase
-        .from('posts')
-        .select('*, categories(*)')
-        .eq('author_id', authorData.id)
-        .eq('status', 'published')
-        .order('published_at', { ascending: false })
+      // Параллельно — посты, профиль (для расширенных полей), интересы
+      const [postsRes, profileRes, interestsRes] = await Promise.all([
+        supabase
+          .from('posts')
+          .select('*, categories(*)')
+          .eq('author_id', authorData.id)
+          .eq('status', 'published')
+          .order('published_at', { ascending: false }),
+        authorData.profile_id
+          ? supabase
+              .from('profiles')
+              .select('christian_name, baptism_date, city, social_links, privacy_settings')
+              .eq('id', authorData.profile_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        authorData.profile_id
+          ? supabase
+              .from('profile_interests')
+              .select('tag_id, interest_tags(id, name, icon, sort_order)')
+              .eq('profile_id', authorData.profile_id)
+          : Promise.resolve({ data: null, error: null }),
+      ])
 
-      if (postsErr) {
-        setError(postsErr.message)
-      } else {
-        setAuthor(authorData)
-        setPosts(postsData || [])
+      if (postsRes.error) {
+        setError(postsRes.error.message)
+        setLoading(false)
+        return
       }
+
+      setAuthor(authorData as Author)
+      setPosts((postsRes.data || []) as Post[])
+
+      if (profileRes.data) {
+        const p = profileRes.data
+        setExtras({
+          christian_name: p.christian_name,
+          baptism_date: p.baptism_date,
+          city: p.city,
+          social_links: (p.social_links ?? {}) as SocialLinks,
+          privacy_settings: { ...DEFAULT_PRIVACY, ...((p.privacy_settings ?? {}) as Partial<PrivacySettings>) },
+        })
+      }
+
+      if (interestsRes.data) {
+        const tags = interestsRes.data
+          .map(row => row.interest_tags)
+          .filter((t): t is { id: number; name: string; icon: string | null; sort_order: number | null } => Boolean(t))
+          .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
+          .map(t => ({ id: t.id, name: t.name, icon: t.icon }))
+        setInterests(tags)
+      }
+
       setLoading(false)
     }
-    if (slug) loadData()
+    loadData()
   }, [slug])
 
   function getPreview(post: Post): string {
@@ -89,6 +181,17 @@ function AuthorPage() {
     )
   }
 
+  // Логика приватности (для extras)
+  const p = extras?.privacy_settings ?? DEFAULT_PRIVACY
+  const showChristianName  = extras?.christian_name && p.christian_name
+  const showBaptismDate    = extras?.baptism_date && p.baptism_date
+  const showCity           = extras?.city && p.city
+  const showInterests      = interests.length > 0 && p.interests
+  const showSocialLinks    = extras?.social_links && p.social_links && (
+    extras.social_links.telegram || extras.social_links.vk || extras.social_links.website
+  )
+  const hasDetailsBlock = showChristianName || showBaptismDate || showCity
+
   return (
     <Layout>
       <main className="max-w-3xl mx-auto px-6 py-10">
@@ -107,14 +210,108 @@ function AuthorPage() {
               </div>
             )}
             <div className="flex-1">
-              <h1 className="font-display text-3xl mb-2" style={{ color: 'var(--color-deep)' }}>{author.name}</h1>
+              <h1 className="font-display text-3xl leading-tight" style={{ color: 'var(--color-deep)' }}>{author.name}</h1>
+              {author.slug && (
+                <p className="text-sm text-stone-500 mb-2">@{author.slug}</p>
+              )}
               {author.bio && <p className="text-stone-700 mb-3">{author.bio}</p>}
               <SubscribeButton authorId={author.id} />
               {author.blessing_info && (
                 <p className="text-xs text-stone-500 italic mt-3">{author.blessing_info}</p>
               )}
-              </div>
+            </div>
           </div>
+
+          {/* Расширенные поля профиля автора */}
+          {hasDetailsBlock && (
+            <dl className="border-t border-stone-100 mt-5 pt-4 space-y-3 text-sm">
+              {showChristianName && (
+                <div>
+                  <dt className="text-stone-500 text-xs uppercase tracking-wider">Имя в крещении</dt>
+                  <dd className="text-stone-900 mt-0.5">{extras!.christian_name}</dd>
+                </div>
+              )}
+              {showBaptismDate && (
+                <div>
+                  <dt className="text-stone-500 text-xs uppercase tracking-wider">Дата крещения</dt>
+                  <dd className="text-stone-900 mt-0.5">{formatBaptismDate(extras!.baptism_date)}</dd>
+                </div>
+              )}
+              {showCity && (
+                <div>
+                  <dt className="text-stone-500 text-xs uppercase tracking-wider">Город</dt>
+                  <dd className="text-stone-900 mt-0.5">{extras!.city}</dd>
+                </div>
+              )}
+            </dl>
+          )}
+
+          {/* Интересы */}
+          {showInterests && (
+            <div className="border-t border-stone-100 mt-5 pt-4">
+              <div className="text-stone-500 text-xs uppercase tracking-wider mb-2">Интересы</div>
+              <div className="flex flex-wrap gap-2">
+                {interests.map(tag => {
+                  const Icon = getInterestIcon(tag.icon)
+                  return (
+                    <span
+                      key={tag.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs"
+                      style={{
+                        backgroundColor: 'rgba(139, 111, 71, 0.1)',
+                        color: 'var(--color-accent-dark)',
+                      }}
+                    >
+                      <Icon size={12} />
+                      {tag.name}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Контакты */}
+          {showSocialLinks && extras && (
+            <div className="border-t border-stone-100 mt-5 pt-4">
+              <div className="text-stone-500 text-xs uppercase tracking-wider mb-2">Контакты</div>
+              <div className="flex flex-wrap gap-3 text-sm">
+                {extras.social_links.telegram && (() => {
+                  const n = normalizeTelegram(extras.social_links.telegram!)
+                  return (
+                    <a href={n.href} target="_blank" rel="noopener noreferrer"
+                       className="inline-flex items-center gap-1.5 hover:underline"
+                       style={{ color: 'var(--color-accent-dark)' }}>
+                      <span className="text-stone-500 text-xs">Telegram:</span>
+                      <span>{n.display}</span>
+                    </a>
+                  )
+                })()}
+                {extras.social_links.vk && (() => {
+                  const n = normalizeVk(extras.social_links.vk!)
+                  return (
+                    <a href={n.href} target="_blank" rel="noopener noreferrer"
+                       className="inline-flex items-center gap-1.5 hover:underline"
+                       style={{ color: 'var(--color-accent-dark)' }}>
+                      <span className="text-stone-500 text-xs">VK:</span>
+                      <span>{n.display}</span>
+                    </a>
+                  )
+                })()}
+                {extras.social_links.website && (() => {
+                  const n = normalizeWebsite(extras.social_links.website!)
+                  return (
+                    <a href={n.href} target="_blank" rel="noopener noreferrer"
+                       className="inline-flex items-center gap-1.5 hover:underline"
+                       style={{ color: 'var(--color-accent-dark)' }}>
+                      <span className="text-stone-500 text-xs">Сайт:</span>
+                      <span>{n.display}</span>
+                    </a>
+                  )
+                })()}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Посты автора */}

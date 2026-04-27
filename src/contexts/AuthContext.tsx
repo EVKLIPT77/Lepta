@@ -3,6 +3,20 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../supabase'
 
+export interface SocialLinks {
+  telegram?: string
+  vk?: string
+  website?: string
+}
+
+export interface PrivacySettings {
+  christian_name: boolean
+  baptism_date: boolean
+  city: boolean
+  interests: boolean
+  social_links: boolean
+}
+
 export interface Profile {
   id: string
   username: string
@@ -10,6 +24,19 @@ export interface Profile {
   avatar_url: string | null
   bio: string | null
   role: 'reader' | 'author' | 'editor' | 'admin'
+  christian_name: string | null
+  baptism_date: string | null
+  city: string | null
+  social_links: SocialLinks
+  privacy_settings: PrivacySettings
+}
+
+const DEFAULT_PRIVACY: PrivacySettings = {
+  christian_name: true,
+  baptism_date: false,
+  city: false,
+  interests: true,
+  social_links: true,
 }
 
 interface AuthContextValue {
@@ -42,7 +69,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Сужаем role: в БД это text + check, но Supabase выдаёт строку
     const validRoles = ['reader', 'author', 'editor', 'admin'] as const
     const role = (validRoles as readonly string[]).includes(data.role) ? (data.role as Profile['role']) : 'reader'
-    setProfile({ ...data, role })
+    // social_links/privacy_settings в БД — jsonb. Для безопасности подмешиваем дефолты-ключи
+    const socialLinks = (data.social_links ?? {}) as SocialLinks
+    const privacy = { ...DEFAULT_PRIVACY, ...((data.privacy_settings ?? {}) as Partial<PrivacySettings>) }
+    setProfile({
+      ...data,
+      role,
+      social_links: socialLinks,
+      privacy_settings: privacy,
+    })
   }
 
   useEffect(() => {
