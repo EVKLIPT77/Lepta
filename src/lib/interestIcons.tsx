@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 // Иконки интересов — inline SVG в стиле Lucide (stroke-based).
 // Имена в iconMap соответствуют значениям колонки interest_tags.icon в БД.
 // Если в БД встретится незнакомое имя — вернётся fallback (Tag).

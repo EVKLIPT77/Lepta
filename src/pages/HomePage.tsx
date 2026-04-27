@@ -74,17 +74,35 @@ function HomePage() {
   return (
     <Layout>
       {/* HERO */}
-      <section className="border-b border-stone-200" style={{ backgroundColor: 'white' }}>
-        <div className="max-w-3xl mx-auto px-6 py-16 sm:py-24 text-center">
-          <h1 className="font-display text-5xl sm:text-6xl md:text-7xl tracking-wide leading-tight mb-6" style={{ color: 'var(--color-deep)' }}>
-            Эммаусъ
-          </h1>
-          <p className="text-lg sm:text-xl text-stone-700 italic max-w-xl mx-auto mb-2 leading-relaxed">
+      {/* HERO с фоновой иллюстрацией */}
+      <section className="relative border-b border-stone-200 overflow-hidden">
+        {/* Фоновая иллюстрация — разные изображения для мобилки и десктопа */}
+        <picture>
+          <source media="(min-width: 768px)" srcSet="/hero-emmaus-wide.webp" />
+          <img
+            src="/hero-emmaus.webp"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
+          />
+        </picture>
+
+        {/* Кремовый оверлей для читаемости текста (плотнее снизу) */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(250, 247, 242, 0.5) 0%, rgba(250, 247, 242, 0.92) 100%)'
+          }}
+        />
+
+        {/* Контент */}
+        <div className="relative max-w-3xl mx-auto px-6 py-20 sm:py-28 md:py-36 text-center">
+          <p className="text-lg sm:text-xl md:text-2xl text-stone-800 italic max-w-2xl mx-auto mb-3 leading-relaxed">
             «Не горело ли в нас сердце наше, когда Он говорил нам на пути?»
           </p>
-          <p className="text-sm text-stone-500 mb-10">Лк 24:32</p>
+          <p className="text-sm text-stone-600 mb-10">Лк 24:32</p>
 
-          <p className="text-base sm:text-lg text-stone-700 max-w-xl mx-auto mb-8 leading-relaxed">
+          <p className="text-base sm:text-lg text-stone-800 max-w-xl mx-auto mb-8 leading-relaxed">
             Место беседы на пути для православной молодёжи. Слово пастырей, размышления авторов, общение и совместное движение к свету.
           </p>
 
@@ -98,8 +116,8 @@ function HomePage() {
             </Link>
             <Link
               to="/signup"
-              className="px-6 py-3 rounded-lg font-medium text-base border transition-colors hover:bg-stone-100"
-              style={{ borderColor: 'rgba(139, 111, 71, 0.3)', color: 'var(--color-accent-dark)' }}
+              className="px-6 py-3 rounded-lg font-medium text-base border transition-colors hover:bg-stone-100/80 backdrop-blur-sm"
+              style={{ borderColor: 'rgba(139, 111, 71, 0.4)', color: 'var(--color-accent-dark)', backgroundColor: 'rgba(255, 255, 255, 0.7)' }}
             >
               Присоединиться
             </Link>

@@ -133,12 +133,30 @@ function FeedPage() {
   return (
     <Layout>
       {/* Hero-блок */}
-      <section className="bg-white border-b border-stone-200">
-        <div className="max-w-3xl mx-auto px-6 py-10 md:py-16 text-center">
-          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl tracking-wide mb-4 leading-tight" style={{ color: 'var(--color-deep)' }}>
-            Эммаусъ
-          </h1>
-          <p className="text-lg text-stone-700 max-w-xl mx-auto mb-2 italic">
+      {/* Hero-блок с фоновой иллюстрацией */}
+      <section className="relative border-b border-stone-200 overflow-hidden">
+        {/* Фоновая иллюстрация — разные изображения для мобилки и десктопа */}
+        <picture>
+          <source media="(min-width: 768px)" srcSet="/hero-emmaus-wide.webp" />
+          <img
+            src="/hero-emmaus.webp"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
+          />
+        </picture>
+
+        {/* Кремовый оверлей для читаемости текста (плотнее снизу, прозрачнее сверху) */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(250, 247, 242, 0.55) 0%, rgba(250, 247, 242, 0.85) 100%)'
+          }}
+        />
+
+        {/* Текст */}
+        <div className="relative max-w-3xl mx-auto px-6 py-20 md:py-32 text-center">
+          <p className="text-lg sm:text-xl md:text-2xl text-stone-800 max-w-2xl mx-auto mb-3 italic leading-relaxed">
             «Не горело ли в нас сердце наше, когда Он говорил нам на пути?»
           </p>
           <p className="text-sm text-stone-500 max-w-xl mx-auto">
