@@ -16,6 +16,11 @@ import MyPostsPage from './pages/MyPostsPage'
 import PostEditPage from './pages/PostEditPage'
 import LeptaPage from './pages/LeptaPage'
 import UserPage from './pages/UserPage'
+import TemplesPage from './pages/TemplesPage'
+import TempleApplicationPage from './pages/TempleApplicationPage'
+import AdminTempleApplicationsPage from './pages/AdminTempleApplicationsPage'
+import AdminTempleApplicationDetailPage from './pages/AdminTempleApplicationDetailPage'
+import TemplePage from './pages/TemplePage'
 
 function App() {
   return (
@@ -39,6 +44,11 @@ function App() {
         <Route path="/profile/posts/:id/edit" element={<PostEditPage />} />
         <Route path="/admin/applications" element={<AdminApplicationsPage />} />
         <Route path="/admin/applications/:id" element={<AdminApplicationDetailPage />} />
+        <Route path="/temples" element={<TemplesPage />} />
+        <Route path="/temples/new" element={<TempleApplicationPage />} />
+        <Route path="/admin/temple-applications" element={<AdminTempleApplicationsPage />} />
+        <Route path="/admin/temple-applications/:id" element={<AdminTempleApplicationDetailPage />} />
+        <Route path="/temple/:slug" element={<TemplePage />} />
       </Routes>
     </BrowserRouter>
   )

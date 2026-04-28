@@ -50,8 +50,17 @@ function UserPage() {
       }
 
       // Если автор — отдаём команду на редирект
-      if (prof.role === 'author' || prof.role === 'editor' || prof.role === 'admin') {
-        setRedirectToAuthor(prof.username)
+      // Если у пользователя есть запись в authors — ведём на /author/:slug.
+      // Используем именно факт записи, а не роль, потому что админ/редактор
+      // не обязательно являются авторами с публичной страницей.
+      const { data: authorRow } = await supabase
+        .from('authors')
+        .select('slug')
+        .eq('profile_id', prof.id)
+        .maybeSingle()
+
+      if (authorRow?.slug) {
+        setRedirectToAuthor(authorRow.slug)
         return
       }
 
@@ -60,7 +69,21 @@ function UserPage() {
       const role = (validRoles as readonly string[]).includes(prof.role)
         ? (prof.role as ProfileCardData['role'])
         : 'reader'
+      const validRelations = ['parishioner', 'occasional', 'seeking'] as const
+      const temple_relation = prof.temple_relation && (validRelations as readonly string[]).includes(prof.temple_relation)
+        ? (prof.temple_relation as ProfileCardData['temple_relation'])
+        : null
 
+      // Если есть temple_id — догружаем храм отдельным запросом
+      let temple: ProfileCardData['temple'] = null
+      if (prof.temple_id) {
+        const { data: templeData } = await supabase
+          .from('temples')
+          .select('id, slug, name, city')
+          .eq('id', prof.temple_id)
+          .maybeSingle()
+        if (templeData) temple = templeData
+      }
       const cardData: ProfileCardData = {
         username: prof.username,
         display_name: prof.display_name,
@@ -72,6 +95,8 @@ function UserPage() {
         social_links: (prof.social_links ?? {}) as SocialLinks,
         privacy_settings: { ...DEFAULT_PRIVACY, ...((prof.privacy_settings ?? {}) as Partial<PrivacySettings>) },
         role,
+        temple_relation,
+        temple,
       }
       setData(cardData)
 

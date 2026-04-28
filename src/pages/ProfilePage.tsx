@@ -10,17 +10,27 @@ interface Application {
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
 }
+interface TempleApp {
+  id: number
+  name: string
+  city: string | null
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string | null
+  reviewer_comment: string | null
+  temple_slug: string | null
+}
 
 function ProfilePage() {
   const { user, profile, loading, signOut } = useAuth()
   const [application, setApplication] = useState<Application | null>(null)
   const [interests, setInterests] = useState<ProfileInterest[]>([])
-
+  const [templeApps, setTempleApps] = useState<TempleApp[]>([])
+  const [authorSlug, setAuthorSlug] = useState<string | null>(null)
   useEffect(() => {
     if (!user) return
 
     async function load() {
-      const [{ data: appData }, { data: interestsData }] = await Promise.all([
+      const [{ data: appData }, { data: interestsData }, { data: templeAppsData }, { data: authorRow }] = await Promise.all([
         supabase
           .from('author_applications')
           .select('id, status, created_at')
@@ -30,9 +40,20 @@ function ProfilePage() {
           .from('profile_interests')
           .select('tag_id, interest_tags(id, name, icon, sort_order)')
           .eq('profile_id', user!.id),
+        supabase
+          .from('temple_applications')
+          .select('id, name, city, status, created_at, reviewer_comment, resulting_temple_id')
+          .eq('profile_id', user!.id)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('authors')
+          .select('slug')
+          .eq('profile_id', user!.id)
+          .maybeSingle(),
       ])
 
-      // Заявка
+      // Заявка на авторство
       if (appData) {
         const validStatuses = ['pending', 'approved', 'rejected'] as const
         const status = (validStatuses as readonly string[]).includes(appData.status)
@@ -43,13 +64,47 @@ function ProfilePage() {
         setApplication(null)
       }
 
-      // Интересы (через join)
+      // Интересы
       const tags = (interestsData || [])
         .map(row => row.interest_tags)
         .filter((t): t is { id: number; name: string; icon: string | null; sort_order: number | null } => Boolean(t))
         .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
         .map(t => ({ id: t.id, name: t.name, icon: t.icon }))
       setInterests(tags)
+
+      // Заявки на храмы
+      const validStatuses = ['pending', 'approved', 'rejected'] as const
+      let apps: TempleApp[] = (templeAppsData || []).map(a => ({
+        id: a.id,
+        name: a.name,
+        city: a.city,
+        status: ((validStatuses as readonly string[]).includes(a.status) ? a.status : 'pending') as TempleApp['status'],
+        created_at: a.created_at,
+        reviewer_comment: a.reviewer_comment,
+        temple_slug: null as string | null,
+      }))
+
+      // Догружаем slug'и для approved-заявок отдельным запросом
+      const approvedTempleIds = (templeAppsData || [])
+        .filter(a => a.status === 'approved' && a.resulting_temple_id)
+        .map(a => a.resulting_temple_id as number)
+
+      if (approvedTempleIds.length > 0) {
+        const { data: templesData } = await supabase
+          .from('temples')
+          .select('id, slug')
+          .in('id', approvedTempleIds)
+
+        const slugMap = new Map((templesData || []).map(t => [t.id, t.slug]))
+        apps = apps.map(app => {
+          const original = (templeAppsData || []).find(a => a.id === app.id)
+          const tid = original?.resulting_temple_id
+          return tid ? { ...app, temple_slug: slugMap.get(tid) ?? null } : app
+        })
+      }
+
+      setTempleApps(apps)
+      setAuthorSlug(authorRow?.slug ?? null)
     }
 
     load()
@@ -64,7 +119,7 @@ function ProfilePage() {
   }
 
   const isAuthor = profile.role === 'author' || profile.role === 'editor' || profile.role === 'admin'
-
+  
   return (
     <Layout>
       <div className="max-w-2xl mx-auto px-6 py-10">
@@ -108,7 +163,7 @@ function ProfilePage() {
               </Link>
             )}
             <Link
-              to={isAuthor ? `/author/${profile.username}` : `/u/${profile.username}`}
+              to={authorSlug ? `/author/${authorSlug}` : `/u/${profile.username}`}
               className="px-5 py-2.5 rounded-lg text-sm border border-stone-300 hover:bg-stone-100 transition-colors"
             >
               Открыть мою страницу
@@ -176,8 +231,72 @@ function ProfilePage() {
             )}
           </div>
         )}
+        {/* Мои заявки на храмы */}
+        {templeApps.length > 0 && (
+          <div className="bg-white border border-stone-200 rounded-lg p-6 mb-6">
+            <h2 className="font-display text-xl mb-4" style={{ color: 'var(--color-deep)' }}>
+              Мои заявки на храмы
+            </h2>
+            <div className="space-y-3">
+              {templeApps.map(app => (
+                <div key={app.id} className="border border-stone-100 rounded-lg p-4 flex items-start gap-3">
+                  <TempleAppStatusBadge status={app.status} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-stone-900">{app.name}</div>
+                    {app.city && <div className="text-xs text-stone-500 mt-0.5">{app.city}</div>}
+                    {app.status === 'rejected' && app.reviewer_comment && (
+                      <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-1.5 mt-2">
+                        {app.reviewer_comment}
+                      </div>
+                    )}
+                    {app.status === 'approved' && app.temple_slug && (
+                      <Link
+                        to={`/temple/${app.temple_slug}`}
+                        className="text-xs underline mt-2 inline-block"
+                        style={{ color: 'var(--color-accent-dark)' }}
+                      >
+                        Открыть страницу храма →
+                      </Link>
+                    )}
+                    {app.created_at && (
+                      <div className="text-xs text-stone-400 mt-1">
+                        Подана {new Date(app.created_at).toLocaleDateString('ru-RU')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
+  )
+}
+
+function TempleAppStatusBadge({ status }: { status: 'pending' | 'approved' | 'rejected' }) {
+  if (status === 'pending') {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full whitespace-nowrap"
+            style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', color: '#92400e' }}>
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+        На рассмотрении
+      </span>
+    )
+  }
+  if (status === 'approved') {
+    return (
+      <span className="text-xs px-2 py-1 rounded-full whitespace-nowrap"
+            style={{ backgroundColor: 'rgba(5, 150, 105, 0.1)', color: '#065f46' }}>
+        Одобрена
+      </span>
+    )
+  }
+  return (
+    <span className="text-xs px-2 py-1 rounded-full whitespace-nowrap"
+          style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', color: '#991b1b' }}>
+        Отклонена
+    </span>
   )
 }
 

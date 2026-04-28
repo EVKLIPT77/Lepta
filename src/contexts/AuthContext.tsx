@@ -29,6 +29,9 @@ export interface Profile {
   city: string | null
   social_links: SocialLinks
   privacy_settings: PrivacySettings
+  temple_id: number | null
+  temple_relation: 'parishioner' | 'occasional' | 'seeking' | null
+  temple: { id: number; slug: string; name: string; city: string | null } | null
 }
 
 const DEFAULT_PRIVACY: PrivacySettings = {
@@ -59,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadProfile(userId: string) {
     const { data } = await supabase
       .from('profiles')
-      .select('*')
+      .select('*, temple:temple_id(id, slug, name, city)')
       .eq('id', userId)
       .single()
     if (!data) {
@@ -69,14 +72,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Сужаем role: в БД это text + check, но Supabase выдаёт строку
     const validRoles = ['reader', 'author', 'editor', 'admin'] as const
     const role = (validRoles as readonly string[]).includes(data.role) ? (data.role as Profile['role']) : 'reader'
+    
+    const validRelations = ['parishioner', 'occasional', 'seeking'] as const
+    const temple_relation = data.temple_relation && (validRelations as readonly string[]).includes(data.temple_relation)
+      ? (data.temple_relation as Profile['temple_relation'])
+      : null
     // social_links/privacy_settings в БД — jsonb. Для безопасности подмешиваем дефолты-ключи
     const socialLinks = (data.social_links ?? {}) as SocialLinks
     const privacy = { ...DEFAULT_PRIVACY, ...((data.privacy_settings ?? {}) as Partial<PrivacySettings>) }
     setProfile({
       ...data,
       role,
+      temple_relation,
       social_links: socialLinks,
       privacy_settings: privacy,
+      temple: data.temple as Profile['temple'],
     })
   }
 

@@ -250,6 +250,8 @@ export type Database = {
           privacy_settings: Json | null
           role: string
           social_links: Json | null
+          temple_id: number | null
+          temple_relation: string | null
           username: string
         }
         Insert: {
@@ -264,6 +266,8 @@ export type Database = {
           privacy_settings?: Json | null
           role?: string
           social_links?: Json | null
+          temple_id?: number | null
+          temple_relation?: string | null
           username: string
         }
         Update: {
@@ -278,9 +282,19 @@ export type Database = {
           privacy_settings?: Json | null
           role?: string
           social_links?: Json | null
+          temple_id?: number | null
+          temple_relation?: string | null
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_temple_id_fkey"
+            columns: ["temple_id"]
+            isOneToOne: false
+            referencedRelation: "temples"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
@@ -312,6 +326,162 @@ export type Database = {
           {
             foreignKeyName: "subscriptions_subscriber_id_fkey"
             columns: ["subscriber_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      temple_applications: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: number
+          latitude: number
+          longitude: number
+          name: string
+          phone: string | null
+          photo_url: string | null
+          profile_id: string
+          rector: string | null
+          resulting_temple_id: number | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_comment: string | null
+          schedule_url: string | null
+          status: string
+          website_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: never
+          latitude: number
+          longitude: number
+          name: string
+          phone?: string | null
+          photo_url?: string | null
+          profile_id: string
+          rector?: string | null
+          resulting_temple_id?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_comment?: string | null
+          schedule_url?: string | null
+          status?: string
+          website_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: never
+          latitude?: number
+          longitude?: number
+          name?: string
+          phone?: string | null
+          photo_url?: string | null
+          profile_id?: string
+          rector?: string | null
+          resulting_temple_id?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_comment?: string | null
+          schedule_url?: string | null
+          status?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temple_applications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temple_applications_resulting_temple_id_fkey"
+            columns: ["resulting_temple_id"]
+            isOneToOne: false
+            referencedRelation: "temples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temple_applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      temples: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: number
+          latitude: number
+          longitude: number
+          name: string
+          phone: string | null
+          photo_url: string | null
+          rector: string | null
+          schedule_url: string | null
+          slug: string
+          submitted_by: string | null
+          website_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: never
+          latitude: number
+          longitude: number
+          name: string
+          phone?: string | null
+          photo_url?: string | null
+          rector?: string | null
+          schedule_url?: string | null
+          slug: string
+          submitted_by?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: never
+          latitude?: number
+          longitude?: number
+          name?: string
+          phone?: string | null
+          photo_url?: string | null
+          rector?: string | null
+          schedule_url?: string | null
+          slug?: string
+          submitted_by?: string | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temples_submitted_by_fkey"
+            columns: ["submitted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

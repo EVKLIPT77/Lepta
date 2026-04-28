@@ -21,6 +21,8 @@ export interface ProfileCardData {
   social_links: SocialLinks
   privacy_settings: PrivacySettings
   role: 'reader' | 'author' | 'editor' | 'admin'
+  temple_relation: 'parishioner' | 'occasional' | 'seeking' | null
+  temple: { id: number; slug: string; name: string; city: string | null } | null
 }
 
 export interface ProfileInterest {
@@ -100,11 +102,15 @@ function ProfileCard({ data, interests, viewMode }: Props) {
   const showCity           = data.city && show(p.city)
   const showInterests      = interests.length > 0 && show(p.interests)
   const showSocialLinks    = (data.social_links.telegram || data.social_links.vk || data.social_links.website) && show(p.social_links)
+  // Приватность храма (флаг 'temple') — пока не показываем чекбокс на UI,
+  // но логика готова. По дефолту true (видно всем).
+  const templePrivate      = (p as PrivacySettings & { temple?: boolean }).temple === false
+  const showTemple         = data.temple_relation && (isOwner || !templePrivate)
 
   const role = roleLabel(data.role)
 
   // Есть ли вообще что показывать в "details" блоке (имя в крещении / дата / город)
-  const hasDetailsBlock = showChristianName || showBaptismDate || showCity
+  const hasDetailsBlock = showChristianName || showBaptismDate || showCity || showTemple
 
   return (
     <div className="bg-white border border-stone-200 rounded-lg p-6">
@@ -169,6 +175,28 @@ function ProfileCard({ data, interests, viewMode }: Props) {
                 {isOwner && !p.city && <LockBadge />}
               </dt>
               <dd className="text-stone-900 mt-0.5">{data.city}</dd>
+            </div>
+          )}
+          {showTemple && (
+            <div>
+              <dt className="text-stone-500 text-xs uppercase tracking-wider">
+                {data.temple_relation === 'parishioner' && 'Прихожанин храма'}
+                {data.temple_relation === 'occasional' && 'Иногда бывает в храме'}
+                {data.temple_relation === 'seeking' && 'О приходе'}
+                {isOwner && templePrivate && <LockBadge />}
+              </dt>
+              <dd className="text-stone-900 mt-0.5">
+                {data.temple_relation === 'seeking' ? (
+                  <span className="text-stone-600 italic">Пока ищу свой храм</span>
+                ) : data.temple ? (
+                  <Link to={`/temple/${data.temple.slug}`} className="hover:underline" style={{ color: 'var(--color-accent-dark)' }}>
+                    {data.temple.name}
+                    {data.temple.city && <span className="text-stone-500"> · {data.temple.city}</span>}
+                  </Link>
+                ) : (
+                  <span className="text-stone-500">не указан</span>
+                )}
+              </dd>
             </div>
           )}
         </dl>

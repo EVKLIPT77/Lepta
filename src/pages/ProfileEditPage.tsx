@@ -14,6 +14,13 @@ interface InterestTag {
   sort_order: number | null
 }
 
+interface TempleOption {
+  id: number
+  name: string
+  city: string | null
+  address: string | null
+}
+
 function ProfileEditPage() {
   const navigate = useNavigate()
   const { user, profile, loading: authLoading, refreshProfile } = useAuth()
@@ -46,6 +53,20 @@ function ProfileEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
+  // Приходской храм + отношение к нему
+  const [templeRelation, setTempleRelation] = useState<'parishioner' | 'occasional' | 'seeking' | null>(null)
+  const [templeId, setTempleId] = useState<number | null>(null)
+
+  // Двухступенчатый поиск: сначала город, потом храм
+  const [allCities, setAllCities] = useState<string[]>([])
+  const [selectedCity, setSelectedCity] = useState<string | null>(null)
+  const [cityQuery, setCityQuery] = useState('')
+  const [cityDropdown, setCityDropdown] = useState(false)
+
+  const [templeQuery, setTempleQuery] = useState('')
+  const [templeOptions, setTempleOptions] = useState<TempleOption[]>([])
+  const [templeDropdown, setTempleDropdown] = useState(false)
+  
   // Заполняем форму данными профиля
   useEffect(() => {
     if (profile) {
@@ -57,8 +78,31 @@ function ProfileEditPage() {
       setCity(profile.city ?? '')
       setSocialLinks(profile.social_links ?? {})
       setPrivacy(profile.privacy_settings)
+      setTempleId(profile.temple_id)
+      setTempleRelation(profile.temple_relation ?? null)
     }
   }, [profile])
+  // Если у пользователя уже есть приходской храм — показываем город и название в полях.
+  // Зависим только от temple_id — при смене других полей profile перезапускать не надо.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!profile?.temple_id) return
+    async function loadCurrentTemple() {
+      const { data } = await supabase
+        .from('temples')
+        .select('name, city, address')
+        .eq('id', profile!.temple_id!)
+        .maybeSingle()
+      if (data) {
+        if (data.city) {
+          setSelectedCity(data.city)
+          setCityQuery(data.city)
+        }
+        setTempleQuery(data.name)
+      }
+    }
+    loadCurrentTemple()
+  }, [profile?.temple_id])
 
   // Загружаем все теги и текущие интересы пользователя
   useEffect(() => {
@@ -78,7 +122,48 @@ function ProfileEditPage() {
 
     loadTagsData()
   }, [user])
+  // Загружаем уникальные города один раз. Для масштаба до пары тысяч храмов норм.
+  useEffect(() => {
+    async function loadCities() {
+      const { data } = await supabase
+        .from('temples')
+        .select('city')
+        .not('city', 'is', null)
+        .order('city')
+      const unique = Array.from(
+        new Set((data || []).map(r => r.city).filter((c): c is string => Boolean(c)))
+      )
+      setAllCities(unique)
+    }
+    loadCities()
+  }, [])
 
+  useEffect(() => {
+    if (!selectedCity) {
+      setTempleOptions([])
+      return
+    }
+    const q = templeQuery.trim()
+    if (templeId !== null) return // уже выбран — не ищем
+
+    const handle = setTimeout(async () => {
+      let query = supabase
+        .from('temples')
+        .select('id, name, city, address')
+        .eq('city', selectedCity)
+        .order('name')
+        .limit(20)
+
+      if (q) {
+        query = query.ilike('name', `%${q}%`)
+      }
+
+      const { data } = await query
+      setTempleOptions((data || []) as TempleOption[])
+    }, 250)
+
+    return () => clearTimeout(handle)
+  }, [templeQuery, templeId, selectedCity])
   if (authLoading) return <Layout><div className="p-10 text-stone-500">Загрузка…</div></Layout>
   if (!user) return <Navigate to="/login" replace />
 
@@ -104,6 +189,46 @@ function ProfileEditPage() {
   function updatePrivacy(key: keyof PrivacySettings, value: boolean) {
     setPrivacy(prev => ({ ...prev, [key]: value }))
   }
+
+  // Поиск храмов с дебаунсом (минимально, без библиотеки)
+  // Поиск храма — только если выбран город. С дебаунсом.
+  
+
+  function selectCity(city: string) {
+    setSelectedCity(city)
+    setCityQuery(city)
+    setCityDropdown(false)
+    // Сбрасываем выбор храма при смене города
+    setTempleId(null)
+    setTempleQuery('')
+    setTempleOptions([])
+  }
+
+  function clearCity() {
+    setSelectedCity(null)
+    setCityQuery('')
+    setTempleId(null)
+    setTempleQuery('')
+    setTempleOptions([])
+  }
+
+  function selectTemple(t: TempleOption) {
+    setTempleId(t.id)
+    setTempleQuery(t.name)
+    setTempleDropdown(false)
+    setTempleOptions([])
+  }
+
+  function clearTemple() {
+    setTempleId(null)
+    setTempleQuery('')
+    setTempleOptions([])
+  }
+
+  // Фильтрация городов для выпадашки
+  const filteredCities = cityQuery.trim()
+    ? allCities.filter(c => c.toLowerCase().includes(cityQuery.trim().toLowerCase())).slice(0, 10)
+    : allCities.slice(0, 10)
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -156,6 +281,8 @@ function ProfileEditPage() {
         city: city.trim() || null,
         social_links: socialLinks as unknown as Json,
         privacy_settings: privacy as unknown as Json,
+        temple_id: templeRelation === 'seeking' ? null : templeId,
+        temple_relation: templeRelation,
       })
       .eq('id', user.id)
 
@@ -321,7 +448,159 @@ function ProfileEditPage() {
               />
             </div>
           </section>
+          {/* === Блок 2.5. Приходской храм === */}
+          <section className="bg-white border border-stone-200 rounded-lg p-6 space-y-5">
+            <div>
+              <h2 className="font-display text-xl mb-1" style={{ color: 'var(--color-deep)' }}>
+                Приходской храм
+              </h2>
+              <p className="text-sm text-stone-500">
+                Расскажите о вашем отношении к храму. Это помогает другим понять, на каком этапе пути вы находитесь.
+              </p>
+            </div>
 
+            {/* Радио: тип отношения */}
+            <div className="space-y-2">
+              <RelationOption
+                label="Я постоянный прихожанин"
+                description="Хожу регулярно в один храм, считаю его своим"
+                value="parishioner"
+                checked={templeRelation === 'parishioner'}
+                onChange={setTempleRelation}
+              />
+              <RelationOption
+                label="Иногда бываю"
+                description="Хожу в храм, но не считаю себя постоянным прихожанином"
+                value="occasional"
+                checked={templeRelation === 'occasional'}
+                onChange={setTempleRelation}
+              />
+              <RelationOption
+                label="Пока ищу свой храм"
+                description="Только начинаю свой путь или ещё не нашёл постоянный храм"
+                value="seeking"
+                checked={templeRelation === 'seeking'}
+                onChange={setTempleRelation}
+              />
+            </div>
+
+            {/* Выбор города и храма — только если выбраны parishioner или occasional */}
+            {(templeRelation === 'parishioner' || templeRelation === 'occasional') && (
+              <div className="space-y-4 pt-3 border-t border-stone-100">
+                {/* Город */}
+                <div className="relative">
+                  <label className="block text-sm text-stone-700 mb-1.5">
+                    Город храма <span className="text-stone-400">(сначала выберите город)</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={cityQuery}
+                      onChange={e => {
+                        setCityQuery(e.target.value)
+                        if (selectedCity !== null) {
+                          setSelectedCity(null)
+                          setTempleId(null)
+                          setTempleQuery('')
+                        }
+                        setCityDropdown(true)
+                      }}
+                      onFocus={() => setCityDropdown(true)}
+                      onBlur={() => setTimeout(() => setCityDropdown(false), 150)}
+                      placeholder="Например, Москва"
+                      className="w-full px-4 py-2 pr-10 border border-stone-300 rounded-lg focus:outline-none focus:border-stone-500 bg-white"
+                    />
+                    {selectedCity && (
+                      <button
+                        type="button"
+                        onClick={clearCity}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 px-2"
+                        aria-label="Очистить город"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+
+                  {cityDropdown && filteredCities.length > 0 && !selectedCity && (
+                    <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-md max-h-60 overflow-y-auto">
+                      {filteredCities.map(c => (
+                        <li key={c}>
+                          <button
+                            type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => selectCity(c)}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-stone-50 border-b border-stone-100 last:border-b-0"
+                          >
+                            {c}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {cityDropdown && cityQuery.trim() && filteredCities.length === 0 && !selectedCity && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-md px-4 py-3 text-sm text-stone-500">
+                      В этом городе пока нет добавленных храмов. <Link to="/temples/new" className="underline" style={{ color: 'var(--color-accent-dark)' }}>Предложить храм</Link>
+                    </div>
+                  )}
+                </div>
+
+                {/* Храм — показываем только если выбран город */}
+                {selectedCity && (
+                  <div className="relative">
+                    <label className="block text-sm text-stone-700 mb-1.5">Храм</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={templeQuery}
+                        onChange={e => {
+                          setTempleQuery(e.target.value)
+                          if (templeId !== null) setTempleId(null)
+                          setTempleDropdown(true)
+                        }}
+                        onFocus={() => setTempleDropdown(true)}
+                        onBlur={() => setTimeout(() => setTempleDropdown(false), 150)}
+                        placeholder="Начните вводить название"
+                        className="w-full px-4 py-2 pr-10 border border-stone-300 rounded-lg focus:outline-none focus:border-stone-500 bg-white"
+                      />
+                      {templeId !== null && (
+                        <button
+                          type="button"
+                          onClick={clearTemple}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 px-2"
+                          aria-label="Очистить"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+
+                    {templeDropdown && templeOptions.length > 0 && templeId === null && (
+                      <ul className="absolute z-10 left-0 right-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-md max-h-72 overflow-y-auto">
+                        {templeOptions.map(t => (
+                          <li key={t.id}>
+                            <button
+                              type="button"
+                              onMouseDown={e => e.preventDefault()}
+                              onClick={() => selectTemple(t)}
+                              className="w-full text-left px-4 py-2 hover:bg-stone-50 border-b border-stone-100 last:border-b-0"
+                            >
+                              <div className="text-sm text-stone-900">{t.name}</div>
+                              {t.address && <div className="text-xs text-stone-500 mt-0.5">{t.address}</div>}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-xs text-stone-500">
+                  Не нашли свой храм? <Link to="/temples/new" className="underline" style={{ color: 'var(--color-accent-dark)' }}>Предложите добавить</Link>.
+                </p>
+              </div>
+            )}
+          </section>
           {/* === Блок 3. Интересы === */}
           <section className="bg-white border border-stone-200 rounded-lg p-6 space-y-4">
             <div>
@@ -492,5 +771,36 @@ function PrivacyRow({ label, checked, onChange }: { label: string; checked: bool
     </label>
   )
 }
-
+function RelationOption({
+  label, description, value, checked, onChange
+}: {
+  label: string
+  description: string
+  value: 'parishioner' | 'occasional' | 'seeking'
+  checked: boolean
+  onChange: (v: 'parishioner' | 'occasional' | 'seeking' | null) => void
+}) {
+  return (
+    <label
+      className="flex gap-3 items-start p-3 rounded-lg border cursor-pointer transition-colors"
+      style={
+        checked
+          ? { borderColor: 'var(--color-accent)', backgroundColor: 'rgba(139, 111, 71, 0.06)' }
+          : { borderColor: 'rgb(231, 229, 228)' }
+      }
+    >
+      <input
+        type="radio"
+        name="temple-relation"
+        checked={checked}
+        onChange={() => onChange(value)}
+        className="mt-1 accent-stone-700"
+      />
+      <div className="flex-1">
+        <div className="text-sm font-medium text-stone-900">{label}</div>
+        <div className="text-xs text-stone-500 mt-0.5">{description}</div>
+      </div>
+    </label>
+  )
+}
 export default ProfileEditPage

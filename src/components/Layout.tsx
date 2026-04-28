@@ -14,6 +14,7 @@ function Layout({ children }: LayoutProps) {
   const navItems = [
   { to: '/feed', label: 'Лента' },
   { to: '/authors', label: 'Авторы' },
+  { to: '/temples', label: 'Храмы' },
   { to: '/calendar', label: 'Календарь' },
   { to: '/lepta', label: 'Лѣпта' },
 ]
@@ -68,18 +69,32 @@ function Layout({ children }: LayoutProps) {
               user ? (
                 <>
                   {(profile?.role === 'editor' || profile?.role === 'admin') && (
-                    <Link
-                      to="/admin/applications"
-                      className="text-sm transition-colors"
-                      style={{
-                        color: isActive('/admin') ? 'var(--color-accent-dark)' : '#78716c',
-                        fontWeight: isActive('/admin') ? 500 : 400,
-                        borderBottom: isActive('/admin') ? '2px solid var(--color-accent)' : '2px solid transparent',
-                        paddingBottom: '2px'
-                      }}
-                    >
-                      Заявки
-                    </Link>
+                    <>
+                      <Link
+                        to="/admin/applications"
+                        className="text-sm transition-colors"
+                        style={{
+                          color: isActive('/admin/applications') ? 'var(--color-accent-dark)' : '#78716c',
+                          fontWeight: isActive('/admin/applications') ? 500 : 400,
+                          borderBottom: isActive('/admin/applications') ? '2px solid var(--color-accent)' : '2px solid transparent',
+                          paddingBottom: '2px'
+                        }}
+                      >
+                        Заявки авторов
+                      </Link>
+                      <Link
+                        to="/admin/temple-applications"
+                        className="text-sm transition-colors"
+                        style={{
+                          color: isActive('/admin/temple-applications') ? 'var(--color-accent-dark)' : '#78716c',
+                          fontWeight: isActive('/admin/temple-applications') ? 500 : 400,
+                          borderBottom: isActive('/admin/temple-applications') ? '2px solid var(--color-accent)' : '2px solid transparent',
+                          paddingBottom: '2px'
+                        }}
+                      >
+                        Заявки храмов
+                      </Link>
+                    </>
                   )}
                   <Link
                     to="/profile"
@@ -156,19 +171,34 @@ function Layout({ children }: LayoutProps) {
             ))}
 
             {!loading && user && (profile?.role === 'editor' || profile?.role === 'admin') && (
-              <Link
-                to="/admin/applications"
-                onClick={closeMenu}
-                className="px-6 py-3 border-b text-base transition-colors"
-                style={{
-                  color: isActive('/admin') ? 'var(--color-accent-dark)' : 'var(--color-deep)',
-                  fontWeight: isActive('/admin') ? 600 : 400,
-                  borderColor: 'rgba(139, 111, 71, 0.15)',
-                  backgroundColor: isActive('/admin') ? 'rgba(139, 111, 71, 0.08)' : 'transparent'
-                }}
-              >
-                Заявки
-              </Link>
+              <>
+                <Link
+                  to="/admin/applications"
+                  onClick={closeMenu}
+                  className="px-6 py-3 border-b text-base transition-colors"
+                  style={{
+                    color: isActive('/admin/applications') ? 'var(--color-accent-dark)' : 'var(--color-deep)',
+                    fontWeight: isActive('/admin/applications') ? 600 : 400,
+                    borderColor: 'rgba(139, 111, 71, 0.15)',
+                    backgroundColor: isActive('/admin/applications') ? 'rgba(139, 111, 71, 0.08)' : 'transparent'
+                  }}
+                >
+                  Заявки авторов
+                </Link>
+                <Link
+                  to="/admin/temple-applications"
+                  onClick={closeMenu}
+                  className="px-6 py-3 border-b text-base transition-colors"
+                  style={{
+                    color: isActive('/admin/temple-applications') ? 'var(--color-accent-dark)' : 'var(--color-deep)',
+                    fontWeight: isActive('/admin/temple-applications') ? 600 : 400,
+                    borderColor: 'rgba(139, 111, 71, 0.15)',
+                    backgroundColor: isActive('/admin/temple-applications') ? 'rgba(139, 111, 71, 0.08)' : 'transparent'
+                  }}
+                >
+                  Заявки храмов
+                </Link>
+              </>
             )}
 
             {!loading && (
