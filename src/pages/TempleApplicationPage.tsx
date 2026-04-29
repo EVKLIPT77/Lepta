@@ -135,7 +135,7 @@ function TempleApplicationPage() {
 
   const limitReached = pendingCount !== null && pendingCount >= PENDING_LIMIT
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
 

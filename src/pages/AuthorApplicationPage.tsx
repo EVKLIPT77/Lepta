@@ -118,7 +118,7 @@ function AuthorApplicationPage() {
   // Если отклонена — показываем причину и даём подать заново
   // (форма ниже та же что для новой заявки)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!user) return
 
@@ -146,12 +146,21 @@ function AuthorApplicationPage() {
         return
       }
 
+      // Удаляем старые файлы благословения (любого расширения) перед загрузкой
+      const { data: oldFiles } = await supabase.storage
+        .from('applications')
+        .list(user.id)
+      if (oldFiles && oldFiles.length > 0) {
+        const toRemove = oldFiles.map(f => `${user.id}/${f.name}`)
+        await supabase.storage.from('applications').remove(toRemove)
+      }
+
       const ext = docFile.name.split('.').pop()
       const filePath = `${user.id}/blessing.${ext}`
 
       const { error: uploadError } = await supabase.storage
         .from('applications')
-        .upload(filePath, docFile, { upsert: true })
+        .upload(filePath, docFile)
 
       if (uploadError) {
         setError('Не удалось загрузить документ: ' + uploadError.message)

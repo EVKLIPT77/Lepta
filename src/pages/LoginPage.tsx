@@ -14,7 +14,7 @@ function LoginPage() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const turnstileRef = useRef<TurnstileInstance>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setLoading(true)
