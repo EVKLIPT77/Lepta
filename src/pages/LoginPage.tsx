@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Turnstile } from '@marsidev/react-turnstile'
+import type { TurnstileInstance } from '@marsidev/react-turnstile'
 import { supabase } from '../supabase'
 import Layout from '../components/Layout'
 
@@ -9,6 +11,8 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const turnstileRef = useRef<TurnstileInstance>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -17,13 +21,16 @@ function LoginPage() {
 
     const { error: loginError } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
+      options: { captchaToken: captchaToken! },
     })
 
     if (loginError) {
       setError(loginError.message === 'Invalid login credentials'
         ? 'Неверный email или пароль'
         : loginError.message)
+      turnstileRef.current?.reset()
+      setCaptchaToken(null)
       setLoading(false)
       return
     }
@@ -67,6 +74,15 @@ function LoginPage() {
             />
           </div>
 
+          <Turnstile
+            ref={turnstileRef}
+            siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+            onSuccess={setCaptchaToken}
+            onError={() => setCaptchaToken(null)}
+            onExpire={() => setCaptchaToken(null)}
+            options={{ theme: 'light', language: 'ru' }}
+          />
+
           {error && (
             <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
               {error}
@@ -75,7 +91,7 @@ function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !captchaToken}
             className="w-full py-3 rounded-lg font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ backgroundColor: 'var(--color-deep)', color: 'white' }}
           >

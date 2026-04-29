@@ -11,6 +11,7 @@
     "types:gen": "npx -y supabase gen types typescript --project-id tkhhjevtdhlqugnofymu --schema public > src/types/database.ts"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.5.1",
     "@supabase/supabase-js": "^2.104.1",
     "@tailwindcss/vite": "^4.2.4",
     "@tiptap/extension-image": "^3.22.4",
