@@ -17,11 +17,14 @@ interface Author {
 }
 
 interface ProfileExtras {
+  bio: string | null
   christian_name: string | null
   baptism_date: string | null
   city: string | null
   social_links: SocialLinks
   privacy_settings: PrivacySettings
+  temple_relation: 'parishioner' | 'occasional' | 'seeking' | null
+  temple: { id: number; slug: string; name: string; city: string | null } | null
 }
 
 interface ProfileInterest {
@@ -116,7 +119,7 @@ function AuthorPage() {
         authorData.profile_id
           ? supabase
               .from('profiles')
-              .select('christian_name, baptism_date, city, social_links, privacy_settings')
+              .select('bio, christian_name, baptism_date, city, social_links, privacy_settings, temple_relation, temple:temple_id(id, slug, name, city)')
               .eq('id', authorData.profile_id)
               .maybeSingle()
           : Promise.resolve({ data: null, error: null }),
@@ -139,12 +142,19 @@ function AuthorPage() {
 
       if (profileRes.data) {
         const p = profileRes.data
+        const validRelations = ['parishioner', 'occasional', 'seeking'] as const
+        const temple_relation = p.temple_relation && (validRelations as readonly string[]).includes(p.temple_relation)
+          ? (p.temple_relation as ProfileExtras['temple_relation'])
+          : null
         setExtras({
+          bio: p.bio,
           christian_name: p.christian_name,
           baptism_date: p.baptism_date,
           city: p.city,
           social_links: (p.social_links ?? {}) as SocialLinks,
           privacy_settings: { ...DEFAULT_PRIVACY, ...((p.privacy_settings ?? {}) as Partial<PrivacySettings>) },
+          temple_relation,
+          temple: p.temple as ProfileExtras['temple'],
         })
       }
 
@@ -190,7 +200,9 @@ function AuthorPage() {
   const showSocialLinks    = extras?.social_links && p.social_links && (
     extras.social_links.telegram || extras.social_links.vk || extras.social_links.website
   )
-  const hasDetailsBlock = showChristianName || showBaptismDate || showCity
+  const templePrivate      = (p as PrivacySettings & { temple?: boolean }).temple === false
+  const showTemple         = extras?.temple_relation != null && !templePrivate
+  const hasDetailsBlock    = showChristianName || showBaptismDate || showCity || showTemple
 
   return (
     <Layout>
@@ -241,6 +253,33 @@ function AuthorPage() {
                 <div>
                   <dt className="text-stone-500 text-xs uppercase tracking-wider">Город</dt>
                   <dd className="text-stone-900 mt-0.5">{extras!.city}</dd>
+                </div>
+              )}
+              {showTemple && extras && (
+                <div>
+                  <dt className="text-stone-500 text-xs uppercase tracking-wider">
+                    {extras.temple_relation === 'parishioner' ? 'Прихожанин храма'
+                      : extras.temple_relation === 'occasional' ? 'Иногда бывает в храме'
+                      : 'О приходе'}
+                  </dt>
+                  <dd className="text-stone-900 mt-0.5">
+                    {extras.temple_relation === 'seeking' ? (
+                      <span className="text-stone-600 italic">Пока ищу свой храм</span>
+                    ) : extras.temple ? (
+                      <Link
+                        to={`/temple/${extras.temple.slug}`}
+                        className="hover:underline"
+                        style={{ color: 'var(--color-accent-dark)' }}
+                      >
+                        {extras.temple.name}
+                        {extras.temple.city && (
+                          <span className="text-stone-500"> · {extras.temple.city}</span>
+                        )}
+                      </Link>
+                    ) : (
+                      <span className="text-stone-500">не указан</span>
+                    )}
+                  </dd>
                 </div>
               )}
             </dl>

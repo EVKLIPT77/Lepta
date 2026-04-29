@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Layout from '../components/Layout'
+import SubscribeButton from '../components/SubscribeButton'
 
 interface Category {
   id: number
@@ -15,6 +16,7 @@ interface Author {
   slug: string | null
   bio: string | null
   photo_url: string | null
+  profiles: { bio: string | null } | null
 }
 
 interface Post {
@@ -22,6 +24,7 @@ interface Post {
   title: string | null
   body: string | null
   published_at: string | null
+  cover_image_url: string | null
   categories: Category | null
   authors: Author | null
 }
@@ -37,13 +40,13 @@ function PostPage() {
       if (!id) return
       const { data, error } = await supabase
         .from('posts')
-        .select('*, categories(*), authors(*)')
+        .select('*, categories(*), authors(*, profiles!profile_id(bio))')
         .eq('id', Number(id))
         .eq('status', 'published')
         .single()
 
       if (error) setError(error.message)
-      else setPost(data)
+      else setPost(data as unknown as Post)
       setLoading(false)
     }
     if (id) loadPost()
@@ -93,37 +96,62 @@ function PostPage() {
           {post.title || 'Без названия'}
         </h1>
 
+        {post.cover_image_url && (
+          <img
+            src={post.cover_image_url}
+            alt=""
+            className="w-full rounded-lg object-cover mb-8"
+            style={{ maxHeight: '480px' }}
+          />
+        )}
+
        <div
           className="prose prose-stone prose-lg max-w-none mb-12"
           dangerouslySetInnerHTML={{ __html: post.body || '' }}
         />
 
         {post.authors && (
-          <Link
-            to={`/author/${post.authors.slug}`}
-            className="block bg-white border border-stone-200 rounded-lg p-5 hover:shadow-sm hover:border-stone-300 transition-all"
-          >
-            <div className="flex items-center gap-4">
-              {post.authors.photo_url ? (
-                <img
-                  src={post.authors.photo_url}
-                  alt={post.authors.name || ''}
-                  className="w-14 h-14 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-stone-200 flex items-center justify-center text-stone-500 text-xl font-display">
-                  {post.authors.name?.[0] || '?'}
-                </div>
-              )}
-              <div className="flex-1">
-                <div className="text-xs text-stone-500 mb-1">Автор</div>
-                <div className="font-display text-lg" style={{ color: 'var(--color-deep)' }}>{post.authors.name}</div>
-                {post.authors.bio && (
-                  <div className="text-sm text-stone-600 mt-1 line-clamp-2">{post.authors.bio}</div>
+          <div className="bg-white border border-stone-200 rounded-lg p-5">
+            <div className="flex items-start gap-4">
+              <Link to={`/author/${post.authors.slug}`} className="flex-shrink-0">
+                {post.authors.photo_url ? (
+                  <img
+                    src={post.authors.photo_url}
+                    alt={post.authors.name || ''}
+                    className="w-14 h-14 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-stone-200 flex items-center justify-center text-stone-500 text-xl font-display">
+                    {post.authors.name?.[0] || '?'}
+                  </div>
                 )}
+              </Link>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-stone-500 mb-0.5">Автор</div>
+                <Link to={`/author/${post.authors.slug}`} className="hover:underline">
+                  <span className="font-display text-lg" style={{ color: 'var(--color-deep)' }}>
+                    {post.authors.name}
+                  </span>
+                </Link>
+                {post.authors.slug && (
+                  <div className="text-xs text-stone-500">@{post.authors.slug}</div>
+                )}
+                {post.authors.bio && (
+                  <div className="text-sm text-stone-600 mt-2 line-clamp-2">{post.authors.bio}</div>
+                )}
+
               </div>
             </div>
-          </Link>
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-stone-100">
+              <SubscribeButton authorId={post.authors.id} />
+              <Link
+                to={`/author/${post.authors.slug}`}
+                className="text-sm text-stone-500 hover:text-stone-900 transition-colors"
+              >
+                Все публикации →
+              </Link>
+            </div>
+          </div>
         )}
       </article>
     </Layout>

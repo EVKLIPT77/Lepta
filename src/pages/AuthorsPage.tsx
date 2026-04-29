@@ -9,6 +9,7 @@ interface Author {
   slug: string | null
   bio: string | null
   photo_url: string | null
+  profiles: { bio: string | null } | null
 }
 
 interface AuthorWithStats extends Author {
@@ -30,7 +31,7 @@ function AuthorsPage() {
       // Загружаем авторов + посты + подписчики одним запросом
       const { data, error } = await supabase
         .from('authors')
-        .select('*, posts(count), subscriptions(count)')
+        .select('*, posts(count), subscriptions(count), profiles!profile_id(bio)')
 
       if (error) {
         setError(error.message)
@@ -41,8 +42,9 @@ function AuthorsPage() {
       const enriched = (data || []).map(a => ({
         ...a,
         postCount: (a.posts as { count: number }[] | null)?.[0]?.count ?? 0,
-        subscriberCount: (a.subscriptions as { count: number }[] | null)?.[0]?.count ?? 0
-      })) as AuthorWithStats[]
+        subscriberCount: (a.subscriptions as { count: number }[] | null)?.[0]?.count ?? 0,
+        profiles: (a.profiles as { bio: string | null } | null) ?? null,
+      })) as unknown as AuthorWithStats[]
 
       // Сортируем по убыванию числа подписчиков, потом по алфавиту
       enriched.sort((a, b) => {
@@ -167,11 +169,11 @@ function AuthorsPage() {
                   <div className="text-xs text-stone-500 mb-1.5">@{author.slug}</div>
                 )}
                 {author.bio && (
-                  <div className="text-sm text-stone-600 line-clamp-2 mb-2">
+                  <div className="text-sm text-stone-600 line-clamp-2">
                     {author.bio}
                   </div>
                 )}
-                <div className="text-xs text-stone-500 flex gap-3">
+                <div className="text-xs text-stone-500 flex gap-3 mt-2">
                   <span>
                     {author.postCount} {pluralize(author.postCount, ['публикация', 'публикации', 'публикаций'])}
                   </span>

@@ -26,6 +26,9 @@ function ProfilePage() {
   const [interests, setInterests] = useState<ProfileInterest[]>([])
   const [templeApps, setTempleApps] = useState<TempleApp[]>([])
   const [authorSlug, setAuthorSlug] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   useEffect(() => {
     if (!user) return
 
@@ -119,6 +122,19 @@ function ProfilePage() {
   }
 
   const isAuthor = profile.role === 'author' || profile.role === 'editor' || profile.role === 'admin'
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    setDeleteError(null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.rpc as any)('delete_own_account')
+    if (error) {
+      setDeleteError('Не удалось удалить аккаунт: ' + error.message)
+      setDeleting(false)
+      return
+    }
+    await signOut()
+  }
   
   return (
     <Layout>
@@ -231,6 +247,53 @@ function ProfilePage() {
             )}
           </div>
         )}
+        {/* Удаление аккаунта */}
+        <div className="bg-white border border-stone-200 rounded-lg p-6 mb-6">
+          <h2 className="font-display text-xl mb-1" style={{ color: 'var(--color-deep)' }}>
+            Удаление аккаунта
+          </h2>
+          {!confirmDelete ? (
+            <>
+              <p className="text-sm text-stone-500 mb-4">
+                {isAuthor
+                  ? 'Будут удалены профиль, все публикации и данные автора. Это действие необратимо.'
+                  : 'Будут удалены профиль и все связанные данные. Это действие необратимо.'}
+              </p>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="px-5 py-2.5 rounded-lg text-sm border border-red-300 text-red-700 hover:bg-red-50 transition-colors"
+              >
+                Удалить аккаунт
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-red-700 mb-4">
+                Вы уверены? Восстановить данные будет невозможно.
+              </p>
+              {deleteError && (
+                <p className="text-sm text-red-600 mb-3">{deleteError}</p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="px-5 py-2.5 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  {deleting ? 'Удаляем…' : 'Да, удалить навсегда'}
+                </button>
+                <button
+                  onClick={() => { setConfirmDelete(false); setDeleteError(null) }}
+                  disabled={deleting}
+                  className="px-5 py-2.5 rounded-lg text-sm border border-stone-300 hover:bg-stone-100 transition-colors"
+                >
+                  Отмена
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
         {/* Мои заявки на храмы */}
         {templeApps.length > 0 && (
           <div className="bg-white border border-stone-200 rounded-lg p-6 mb-6">

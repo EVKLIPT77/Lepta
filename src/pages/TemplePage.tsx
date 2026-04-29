@@ -61,8 +61,6 @@ function TemplePage() {
         return
       }
 
-      setTemple(templeData as Temple)
-
       // Прихожане — отдельным запросом, после получения id храма
       const [{ data: parishData }, { count }] = await Promise.all([
         supabase
@@ -77,6 +75,10 @@ function TemplePage() {
           .eq('temple_id', templeData.id),
       ])
 
+      // Все setState вместе — один ре-рендер. Иначе setTemple вызывает рендер
+      // с loading=true (карта не в DOM), а эффект карты не перезапускается при
+      // следующем рендере (ymaps и temple не менялись).
+      setTemple(templeData as Temple)
       setParishioners((parishData || []) as Parishioner[])
       setParishionersCount(count ?? 0)
       setLoading(false)

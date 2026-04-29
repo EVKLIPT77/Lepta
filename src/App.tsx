@@ -21,6 +21,8 @@ import TempleApplicationPage from './pages/TempleApplicationPage'
 import AdminTempleApplicationsPage from './pages/AdminTempleApplicationsPage'
 import AdminTempleApplicationDetailPage from './pages/AdminTempleApplicationDetailPage'
 import TemplePage from './pages/TemplePage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import ConsentPage from './pages/ConsentPage'
 
 function App() {
   return (
@@ -49,6 +51,8 @@ function App() {
         <Route path="/admin/temple-applications" element={<AdminTempleApplicationsPage />} />
         <Route path="/admin/temple-applications/:id" element={<AdminTempleApplicationDetailPage />} />
         <Route path="/temple/:slug" element={<TemplePage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/consent" element={<ConsentPage />} />
       </Routes>
     </BrowserRouter>
   )

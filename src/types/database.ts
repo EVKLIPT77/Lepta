@@ -244,6 +244,7 @@ export type Database = {
           bio: string | null
           christian_name: string | null
           city: string | null
+          consented_at: string | null
           created_at: string
           display_name: string | null
           id: string
@@ -260,6 +261,7 @@ export type Database = {
           bio?: string | null
           christian_name?: string | null
           city?: string | null
+          consented_at?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
@@ -276,6 +278,7 @@ export type Database = {
           bio?: string | null
           christian_name?: string | null
           city?: string | null
+          consented_at?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
